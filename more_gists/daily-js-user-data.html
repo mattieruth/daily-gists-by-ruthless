@@ -1,0 +1,202 @@
+<html>
+  <head>
+    <title>stream local video file</title>
+    <script src="../_roomInfo.js"></script>
+    <script src="../daily-iframe.js"></script>
+    <!-- <script src="https://unpkg.com/@daily-co/daily-js@0.18.0"></script> -->
+    <!-- <script src="https://unpkg.com/@daily-co/daily-js"></script> -->
+  </head>
+  <body onload="main()">
+    <div id="local-controls" style="width: 50%; float: left">
+      <button onclick="join()">join</button>
+      <button onclick="leave()">leave</button><br />
+      <button onclick="updateUserData()">update userData</button>
+      <button onclick="replaceSessionData()">replace sessionData</button>
+      <button onclick="mergeSessionData()">merge sessionData</button>
+      <hr />
+    </div>
+    <div id="videos" style="margin-left: 50%"></div>
+
+    <script>
+      async function main() {
+        window.ROOM_URL = ROOM_URLS.local.websockets;
+
+        const urlParams = new URLSearchParams(window.location.search);
+        var callObjectMode = !urlParams.has('prebuilt');
+        if (callObjectMode) {
+          window.call = DailyIframe.createCallObject({
+            subscribeToTracksAutomatically: true,
+            dailyConfig: {
+              experimentalChromeVideoMuteLightOff: true,
+            },
+            // userData: {
+            //   favoriteMovie: 'goonies',
+            // },
+            userName: 'mouth',
+            // token: window.CREATE_TOKEN,
+          });
+          window.callObject = window.call;
+          call.on("track-started", displayTrack);
+          call.on("track-stopped", destroyTrack);
+          // call.on("recording-started", logEvent);
+          // call.on("recording-stopped", logEvent);
+          // call.on("network-connection", logEvent);
+          // call.on("joined-meeting", handleJoin);
+          // call.on("participant-left", handleParticipantLeft);
+          // call.on("participant-joined", handleParticipantJoined);
+          call.on('participant-updated', handleParticipantUpdated);
+          // call.on("meeting-session-updated", logEvent);
+        } else {
+          let iframe = document.createElement("call-iframe-container");
+          document.body.appendChild(iframe);
+          window.call = DailyIframe.createFrame(iframe, {
+            subscribeToTracksAutomatically: true,
+            dailyConfig: {
+              experimentalChromeVideoMuteLightOff: true,
+            },
+            userData: {
+              favoriteMovie: 'goonies',
+            },
+            userName: 'iFrame',
+          });
+        }
+        call.on("active-speaker-change",
+                (e) => console.log('active speaker change event', e.activeSpeaker.peerId));
+      }
+
+
+      function displayTrack(evt) {
+        console.log("!!! TRACK STARTED", evt);
+        if (evt.track.kind === "video") {
+          displayVideo(evt);
+        } else {
+          playAudio(evt);
+        }
+      }
+
+      function displayVideo(evt) {
+        console.log(evt);
+        let videosDiv = document.getElementById("videos");
+        let videoEl = document.createElement("video");
+        videosDiv.appendChild(videoEl);
+        videoEl.style.width = "100%";
+        videoEl.srcObject = new MediaStream([evt.track]);
+        videoEl.play();
+      }
+
+      function playAudio(evt) {
+        if (evt.participant.local) {
+          return;
+        }
+        let audioEl = document.createElement("audio");
+        document.body.appendChild(audioEl);
+        audioEl.srcObject = new MediaStream([evt.track]);
+        audioEl.play();
+      }
+
+      function destroyTrack(evt) {
+        console.log(
+          "!!! TRACK STOPPED",
+          evt.kind,
+          evt.participant && evt.participant.session_id
+        );
+        let els = Array.from(document.getElementsByTagName("video")).concat(
+          Array.from(document.getElementsByTagName("audio"))
+        );
+        for (let el of els) {
+          if (el.srcObject && el.srcObject.getTracks()[0] === evt.track) {
+            el.remove();
+          }
+        }
+      }
+
+      function join() {
+        call.join({url: ROOM_URL});
+      }
+
+      function leave() {
+        call.leave();
+      }
+
+      function recursiveUserDataUpdate(cnt) {
+        let data = {curVal: cnt++};
+        console.log('setUserData', data);
+        call.setUserData(data);
+        if (cnt < 150) {
+          setTimeout(recursiveUserDataUpdate, 1000/30, cnt);
+        }
+      }
+
+      function updateUserData() {
+        setTimeout(recursiveUserDataUpdate, 1000/30, 0);
+      }
+
+      function recursiveSessionDataReplace(cnt) {
+        let data = {curVal: cnt++};
+        console.log('setMeetingSessionData', data);
+        call.setMeetingSessionData(data);
+        if (cnt < 150) {
+          setTimeout(recursiveSessionDataReplace, 1000/30, cnt);
+        }
+      }
+
+      function replaceSessionData() {
+        setTimeout(recursiveSessionDataReplace, 1000/30, 0);
+      }
+
+      function recursiveSessionDataMerge(cnt) {
+        let key = cnt.toString()
+        let data = {[key]: cnt++};
+        if (cnt % 50) {
+          console.log('setMeetingSessionData (merge)', data);
+          call.setMeetingSessionData(data, 'shallow-merge');
+        } else {
+          console.log('setMeetingSessionData (replace)', data);
+          call.setMeetingSessionData(data, 'replace');
+        }
+        if (cnt < 150) {
+          setTimeout(recursiveSessionDataMerge, 1000/30, cnt);
+        }
+      }
+
+      function mergeSessionData() {
+        setTimeout(recursiveSessionDataMerge, 1000/30, 0);
+      }
+
+      function calcAverageDTime (timeArray) {
+        if (timeArray.length < 2) return 0;
+        let dTimes = [];
+        for (let i = 1; i < timeArray.length; i++) {
+          dTimes.push (timeArray[i] - timeArray[i-1]);
+        }
+        const average = array => array.reduce((a, b) => a + b) / array.length;
+        return average(dTimes);
+      }
+
+      function handleParticipantUpdated(evt) {
+        const p = evt.participant;
+        if (!window.userDatas) {
+          window.userDatas = {};
+          window.dataUpdateTimes = {};
+        }
+        if (window.userDatas[p.session_id] !== p.userData) {
+          if (!window.dataUpdateTimes[p.session_id]) {
+            window.dataUpdateTimes[p.session_id] = [];
+          }
+          let userUpdateTimes = window.dataUpdateTimes[p.session_id]
+          userUpdateTimes.push(Date.now());
+          const averageDTime = calcAverageDTime(userUpdateTimes);
+          console.log(`!! Number of updates (${p.session_id}):`, userUpdateTimes.length);
+          console.log(`!! Average time between updates (${p.session_id}):`, averageDTime);
+        }
+        window.userDatas[p.session_id] = p.userData;
+      }
+
+      function logEvent(evt) {
+        console.log('DAILY EVENT!');
+        console.log(evt);
+        console.log('-----------');
+      }
+    </script>
+  </body>
+</html>

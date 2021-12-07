@@ -1,0 +1,78 @@
+<html>
+    <head>
+        <title>gUM testing</title>
+    </head>
+    <body>
+        <header>enumerateDevices chrome bug</header>
+        <video id="videoLocal"></video>
+        <br/>
+        <button onclick="stopStream()">stop</button>
+        <button onclick="startStream()">start</button>
+        <button onclick='logDevices()'>log devices</button>
+        <script>
+            var streamObj = null,
+              video = null;
+
+            document.addEventListener("DOMContentLoaded", function(event) {
+                //The video object
+                video = document.getElementById('videoLocal');
+            });
+
+            async function startStream() {
+                //Browser compatibility
+                let gUM = navigator.mediaDevices.getUserMedia;
+                //Check if the user media is supported
+                if (gUM) {
+                        try {
+                        //Request for the user media
+                    console.log('YUM. gUM')
+                    let stream = await navigator.mediaDevices.getUserMedia(
+                        {
+                            audio: false,
+                            video: false,
+                        }
+                        );
+                    onSuccess(stream);
+                    } catch (e) {
+                        onErrors(e);
+                    }
+                } else {
+                    alert("User media is not supported.");
+                }
+            }
+
+            function onSuccess(stream) {
+                    console.log('SUCCESS', stream);
+                if (stream && stream.getVideoTracks()[0]) {
+                //Play the media stream in the video element
+                streamObj = stream;
+                let vidTrack = stream.getVideoTracks()[0];
+                console.log(vidTrack.getSettings());
+                video.srcObject = stream;
+                video.play();
+                    }    
+            }
+
+            function onErrors(error) {
+                //Handle the permission denied error in Chrome and 'Starting video failed' error in Firefox
+                if (error.name == "PermissionDeniedError" || error == "Starting video failed") {
+                    alert("Media might already be in use");
+                } else { //Handle all other errors
+                    console.log("error: ", error.name);
+                    console.error(error);
+                }
+            }
+
+            async function logDevices() {
+                navigator.mediaDevices.enumerateDevices().then(
+                (devices) => console.log(devices));
+            }
+
+            function stopStream() {
+                let vidTrack = streamObj.getVideoTracks()[0];
+                console.log(vidTrack.getSettings());
+                vidTrack.stop();
+            }
+        </script>
+    </body>
+</html>

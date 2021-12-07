@@ -1,0 +1,120 @@
+<html>
+  <head>
+    <title>stream local video file</title>
+    <script src="../_roomInfo.js"></script>
+    <script src="../daily-iframe.js"></script>
+    <!-- <script src="https://unpkg.com/@daily-co/daily-js@0.24.0"></script> -->
+    <!-- <script src="https://unpkg.com/@daily-co/daily-js"></script> -->
+  </head>
+  <body onload="main()">
+    <div id="local-controls" style="width: 50%; float: left">
+      <button onclick="createCallObject()">createCallObject</button>
+      <hr />
+    </div>
+    <div id="videos" style="margin-left: 50%"></div>
+
+    <script>
+      function main() {
+        window.ROOM_URL = ROOM_URL.staging.robots;
+
+        window.calls = [];
+      }
+
+      async function createCallObject() {
+        const urlParams = new URLSearchParams(window.location.search);
+        let call = DailyIframe.createCallObject({
+          subscribeToTracksAutomatically: true,
+          dailyConfig: {
+            experimentalChromeVideoMuteLightOff: true,
+          },
+          userName: window.calls.length,
+        });
+        call._instanceName = window.calls.length;
+        window.calls.push(call);
+
+        logMeetingState(call);
+        call.on('loading', logMeetingState);
+        call.on('loaded', logMeetingState);
+        call.on('started-camera', logMeetingState);
+        call.on('joining-meeting', logMeetingState);
+        call.on('joined-meeting', logMeetingState);
+        call.on('left-meeting', logMeetingState);
+        call.on('access-state-updated', logMeetingState);
+
+        call.on("track-started", displayTrack);
+        call.on("track-stopped", destroyTrack);
+        // call.on("recording-started", logEvent);
+        // call.on("recording-stopped", logEvent);
+        // call.on("network-connection", logEvent);
+        // call.on("participant-left", handleParticipantLeft);
+        // call.on("participant-joined", handleParticipantJoined);
+        // call.on('participant-updated', handleParticipantUpdated);
+        // call.on("meeting-session-updated", logEvent);
+        call.on("active-speaker-change",
+                (e) => console.log('active speaker change event', e.activeSpeaker.peerId));
+        call.on("error", (e) => console.error('DAILY SENT AN ERROR!', e));
+      }
+
+      function logMeetingState(evt) {
+        console.log("!!! MEETING STATE UPDATED", evt.action);
+        if (window.store && window.store.getState) {
+          console.log("!!! Window STATE", store.getState().lifecycle.status);
+        }
+        calls.forEach(call => {
+          console.log(`${call._instanceName}: ${call.meetingState()}`);
+        });
+      }
+
+      function displayTrack(evt) {
+        console.log("!!! TRACK STARTED", evt);
+        if (evt.track.kind === "video") {
+          displayVideo(evt);
+        } else {
+          playAudio(evt);
+        }
+      }
+
+      function displayVideo(evt) {
+        console.log(evt);
+        let videosDiv = document.getElementById("videos");
+        let videoEl = document.createElement("video");
+        videosDiv.appendChild(videoEl);
+        videoEl.style.width = "100%";
+        videoEl.srcObject = new MediaStream([evt.track]);
+        videoEl.play();
+      }
+
+      function playAudio(evt) {
+        if (evt.participant.local) {
+          return;
+        }
+        let audioEl = document.createElement("audio");
+        document.body.appendChild(audioEl);
+        audioEl.srcObject = new MediaStream([evt.track]);
+        audioEl.play();
+      }
+
+      function destroyTrack(evt) {
+        console.log(
+          "!!! TRACK STOPPED",
+          evt.kind,
+          evt.participant && evt.participant.session_id
+        );
+        let els = Array.from(document.getElementsByTagName("video")).concat(
+          Array.from(document.getElementsByTagName("audio"))
+        );
+        for (let el of els) {
+          if (el.srcObject && el.srcObject.getTracks()[0] === evt.track) {
+            el.remove();
+          }
+        }
+      }
+
+      function logEvent(evt) {
+        console.log('DAILY EVENT!');
+        console.log(evt);
+        console.log('-----------');
+      }
+    </script>
+  </body>
+</html>

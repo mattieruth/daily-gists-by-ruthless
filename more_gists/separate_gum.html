@@ -1,0 +1,149 @@
+<html>
+  <head>
+    <title>stream local video file</title>
+    <script src="../_roomInfo.js"></script>
+    <script src="../daily-iframe.js"></script>
+    <!-- <script src="https://unpkg.com/@daily-co/daily-js@0.24.0"></script> -->
+    <!-- <script src="https://unpkg.com/@daily-co/daily-js"></script> -->
+  </head>
+  <body onload="main()">
+    <div id="local-controls" style="width: 50%; float: left">
+      <button onclick="join()">join</button>
+      <button onclick="leave()">leave</button><br />
+      <!-- <button onclick="muteCam()"></button>
+      <button onclick="unmuteCam()"></button>
+      <button onclick="muteMic()"></button>
+      <button onclick="unmuteMic()"></button> -->
+      <hr />
+    </div>
+    <div id="videos" style="margin-left: 50%"></div>
+
+    <script>
+      async function main() {
+        window.ROOM_URL = ROOM_URLS.ngrok.robots;
+
+        const urlParams = new URLSearchParams(window.location.search);
+        var callObjectMode = !urlParams.has('prebuilt');
+        if (callObjectMode) {
+          window.call = DailyIframe.createCallObject({
+            subscribeToTracksAutomatically: true,
+            dailyConfig: {
+              experimentalChromeVideoMuteLightOff: true,
+              startVideoOff: true,
+              startAudioOff: true,
+              // musicMode: 'music',
+              userMediaVideoConstraints: {
+                deviceId: {
+                  exact: '123'
+                }
+              },
+              // userMediaAudioConstraints: {
+              //   deviceId: {
+              //     exact: '123'
+              //   }
+              // },
+            },
+            // audioSource: false,
+            // videoSource: false,
+            userName: 'mouth',
+            // token: window.CREATE_TOKEN,
+          });
+          window.callObject = window.call;
+          // window._dailyConfig.experimentalGetUserMediaConstraintsModify =(constraints) => {
+          //       constraints.video = false;
+          //       constraints.audio = false;
+          //     }
+          call.on("track-started", displayTrack);
+          call.on("track-stopped", destroyTrack);
+          // call.on("recording-started", logEvent);
+          // call.on("recording-stopped", logEvent);
+          // call.on("network-connection", logEvent);
+          call.on("joined-meeting", handleJoin);
+          // call.on("participant-left", handleParticipantLeft);
+          // call.on("participant-joined", handleParticipantJoined);
+          // call.on('participant-updated', handleParticipantUpdated);
+          // call.on("meeting-session-updated", logEvent);
+        } else {
+          let iframe = document.createElement("call-iframe-container");
+          document.body.appendChild(iframe);
+          window.call = DailyIframe.createFrame(iframe, {
+            // dailyConfig: {
+            //   experimentalChromeVideoMuteLightOff: true,
+            // },
+            showLeaveButton: true,
+            userName: 'iFrame',
+            activeSpeakerMode: false,
+          });
+        }
+        call.on("active-speaker-change",
+                (e) => console.log('active speaker change event', e.activeSpeaker.peerId));
+        call.on('camera-error', (e) => console.log('!!! camera error', e));
+      }
+
+
+      function displayTrack(evt) {
+        console.log("!!! TRACK STARTED", evt);
+        if (evt.track.kind === "video") {
+          displayVideo(evt);
+        } else {
+          playAudio(evt);
+        }
+      }
+
+      function displayVideo(evt) {
+        console.log(evt);
+        let videosDiv = document.getElementById("videos");
+        let videoEl = document.createElement("video");
+        videosDiv.appendChild(videoEl);
+        videoEl.style.width = "100%";
+        videoEl.srcObject = new MediaStream([evt.track]);
+        videoEl.play();
+      }
+
+      function playAudio(evt) {
+        if (evt.participant.local) {
+          return;
+        }
+        let audioEl = document.createElement("audio");
+        document.body.appendChild(audioEl);
+        audioEl.srcObject = new MediaStream([evt.track]);
+        audioEl.play();
+      }
+
+      function destroyTrack(evt) {
+        console.log(
+          "!!! TRACK STOPPED",
+          evt.kind,
+          evt.participant && evt.participant.session_id
+        );
+        let els = Array.from(document.getElementsByTagName("video")).concat(
+          Array.from(document.getElementsByTagName("audio"))
+        );
+        for (let el of els) {
+          if (el.srcObject && el.srcObject.getTracks()[0] === evt.track) {
+            el.remove();
+          }
+        }
+      }
+
+      function join() {
+        call.join({url: ROOM_URL});
+      }
+
+      function handleJoin(e) {
+        console.log('!! i joined!', e);
+        // console.log('!! participant counts', call.participantCounts());
+      }
+
+      function leave() {
+        call.leave();
+      }
+
+      function logEvent(evt) {
+        console.log('DAILY EVENT!');
+        console.log(evt);
+        console.log('-----------');
+      }
+    </script>
+  </body>
+</html>

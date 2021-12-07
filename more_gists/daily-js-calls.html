@@ -1,0 +1,454 @@
+<html>
+  <head>
+    <title>stream local video file</title>
+    <script src="./_roomInfo.js"></script>
+    <script src="./daily-iframe.js"></script>
+  </head>
+  <body onload="main()">
+    <div id="local-controls" style="width: 50%; float: left">
+      <button onclick="subscribeAll()">subscribe all</button>
+      <button onclick="unsubscribeAll()">unsubscribe</button>
+      <button onclick="runAmok()">run Amok</button>
+      <button onclick="leave()">leave</button><br />
+      <button onclick="throwLocalError()">throw local error</button>
+      <button onclick="throwDailyError()">throw daily error</button>
+      <hr />
+    </div>
+    <div id="videos" style="margin-left: 50%"></div>
+
+    <script>
+      async function main() {
+        const urlParams = new URLSearchParams(window.location.search);
+        var callObjectMode = !urlParams.has('iframe');
+        const ROOM_URL = ROOM_URLS.staging.websockets;
+        if (callObjectMode) {
+          window.call = DailyIframe.createCallObject({
+            subscribeToTracksAutomatically: true,
+            dailyConfig: {
+              experimentalChromeVideoMuteLightOff: true,
+            },
+          });
+          window.callObject = window.call;
+          call.on("track-started", displayTrack);
+          call.on("track-stopped", destroyTrack);
+          call.on("recording-started", logEvent);
+          call.on("recording-stopped", logEvent);
+          call.on("network-connection", logEvent);
+          call.on("participant-left", logEvent);
+          call.on("participant-joined", logEvent);
+          call.on("joined-meeting", logEvent);
+          call.on("meeting-session-updated", logEvent);
+        } else {
+          let iframe = document.createElement("call-iframe-container");
+          document.body.appendChild(iframe);
+          let call = DailyIframe.createFrame(iframe, {
+            subscribeToTracksAutomatically: false,
+            dailyConfig: {
+              experimentalChromeVideoMuteLightOff: true,
+            },
+          });
+          window.call = call;
+        }
+        console.log('!!!DAILY!!! Call Join')
+        let p = await call.join({ url: ROOM_URL });
+        console.log('!!!DAILY!!! Join Await complete');
+        console.log('meeting joined', p);
+        console.log('local id:', p.local.session_id);
+        await call.setNetworkTopology({ topology: "sfu" });
+        console.log(call.room());
+      }
+
+    function sleepDangerously(milliseconds) {
+      const date = Date.now();
+      let currentDate = null;
+      do {
+        currentDate = Date.now();
+      } while (currentDate - date < milliseconds);
+    }
+    window.triggerStaleSocketDangerously = () => {
+      sleepDangerously(35500);
+    };
+
+      function sleep(seconds) {
+        var milliseconds = 1000 * seconds;
+        var start = new Date().getTime();
+        for (var i = 0; i < 1e7; i++) {
+          if ((new Date().getTime() - start) > milliseconds) {
+            break;
+          }
+        }
+      }
+
+    function api_calls (peerId) {
+      return [
+        //   {
+        //       desc: 'startCamera()',
+        //       func: call.startCamera,
+        //       waitAfter: 5,
+        //   },
+        //   {
+        //       desc: 'setInputDevicesAsync()',
+        //       func: call.setInputDevicesAsync,
+        //       waitAfter: 1,
+        //       shouldAwait: true,
+        //   },
+        //   {
+        //       desc: 'setOutputDevice()',
+        //       func: call.setOutputDevice,
+        //       waitAfter: 1,
+        //   },
+          {
+              desc: 'getInputDevices()',
+              func: call.getInputDevices,
+              waitAfter: 1,
+              shouldAwait: true,
+          },
+          {
+              desc: 'startScreenShare()',
+              func: call.startScreenShare,
+              waitAfter: 8,
+          },
+          {
+              desc: 'stopScreenShare()',
+              func: call.stopScreenShare,
+              waitAfter: 1,
+          },
+          { // check
+              desc: 'updateParticipant()',
+              func: call.updateParticipant,
+              waitAfter: 1,
+              args: [`${peerId}`, {setSubscribedTracks: true}],
+          },
+          {
+              desc: 'startRecording()',
+              func: call.startRecording,
+              waitAfter: 2,
+          },
+          {
+              desc: 'startRecording()',
+              func: call.startRecording,
+              waitAfter: 5,
+          },
+          {
+              desc: 'stopRecording()',
+              func: call.stopRecording,
+              waitAfter: 1,
+          },
+          { // check
+              desc: 'startLiveStreaming()',
+              func: call.startLiveStreaming,
+              waitAfter: 1,
+              args: ['https://junk-asdfjkl-ifjiovew.com'],
+          },
+          {
+              desc: 'stopLiveStreaming()',
+              func: call.stopLiveStreaming,
+              waitAfter: 1,
+          },
+          {
+              desc: 'loadCss()',
+              func: call.loadCss,
+              waitAfter: 1,
+              args: [{ cssText: `
+//   .daily-video-div {
+//     position: relative;
+//     visibility: visible;
+//     width: 320;
+//     height: 180;
+//     margin: 1em;
+//     margin-left: auto;
+//   }
+// `}],
+          },
+        //   {
+        //       desc: 'getNetworkStats()',
+        //       func: call.getNetworkStats,
+        //       waitAfter: 1,
+        //   },
+        //   {
+        //       desc: 'enumerateDevices()',
+        //       func: call.enumerateDevices,
+        //       waitAfter: 1,
+        //       shouldAwait: true,
+        //   },
+        //   {
+        //       desc: 'cycleCamera()',
+        //       func: call.cycleCamera,
+        //       waitAfter: 1,
+        //   },
+        //   {
+        //       desc: 'cycleMic()',
+        //       func: call.cycleMic,
+        //       waitAfter: 1,
+        //   },
+          {
+              desc: 'getCameraFacingMode()',
+              func: call.getCameraFacingMode,
+              waitAfter: 1,
+          },
+          {
+              desc: 'sendAppMessage()',
+              func: call.sendAppMessage,
+              waitAfter: 1,
+              args: [{table: 'for one'}, `${peerId}`],
+          },
+          {
+              desc: 'sendAppMessage()',
+              func: call.sendAppMessage,
+              waitAfter: 1,
+              args: [{table: 'for all'}],
+          },
+          {
+              desc: 'addFakeParticipant()',
+              func: call.addFakeParticipant,
+              waitAfter: 1,
+          },
+          {
+              desc: 'setUserName()',
+              func: call.setUserName,
+              waitAfter: 1,
+          },
+          {
+              desc: 'detectAllFaces()',
+              func: call.detectAllFaces,
+              waitAfter: 1,
+          },
+          {
+              desc: 'room()',
+              func: call.room,
+              waitAfter: 1,
+              shouldAwait: true,
+          },
+          {
+              desc: 'setNetworkTopology()',
+              func: call.setNetworkTopology,
+              waitAfter: 5,
+              args: [{topology: 'peer'}],
+              shouldAwait: true,
+          },
+          {
+              desc: 'setNetworkTopology()',
+              func: call.setNetworkTopology,
+              waitAfter: 5,
+              args: [{topology: 'sfu'}],
+              shouldAwait: true,
+          },
+          {
+              desc: 'setPlayNewParticipantSound()',
+              func: call.setPlayNewParticipantSound,
+              waitAfter: 1,
+              args: [true],
+          },
+          {
+              desc: 'setPlayNewParticipantSound()',
+              func: call.setPlayNewParticipantSound,
+              waitAfter: 1,
+              args: [false],
+          },
+          {
+              desc: 'setPlayNewParticipantSound()',
+              func: call.setPlayNewParticipantSound,
+              waitAfter: 1,
+              args: [10],
+          },
+          {
+              desc: 'setSubscribeToTracksAutomatically()',
+              func: call.setSubscribeToTracksAutomatically,
+              waitAfter: 1,
+              args: [true],
+          },
+          {
+              desc: 'setSubscribeToTracksAutomatically()',
+              func: call.setSubscribeToTracksAutomatically,
+              waitAfter: 1,
+              args: [false],
+          },
+          {
+              desc: 'setActiveSpeakerMode()',
+              func: call.setActiveSpeakerMode,
+              waitAfter: 1,
+              args: [true],
+          },
+          {
+              desc: 'setActiveSpeakerMode()',
+              func: call.setActiveSpeakerMode,
+              waitAfter: 1,
+              args: [false],
+          },
+          {
+              desc: 'setShowParticipantsBar()',
+              func: call.setShowParticipantsBar,
+              waitAfter: 1,
+              args: [true],
+          },
+          {
+              desc: 'setShowParticipantsBar()',
+              func: call.setShowParticipantsBar,
+              waitAfter: 1,
+              args: [false],
+          },
+          {
+              desc: 'setShowLocalVideo()',
+              func: call.setShowLocalVideo,
+              waitAfter: 1,
+              args: [true],
+          },
+          {
+              desc: 'setShowLocalVideo()',
+              func: call.setShowLocalVideo,
+              waitAfter: 1,
+              args: [false],
+          },
+          {
+              desc: 'setShowNamesMode()',
+              func: call.setShowNamesMode,
+              waitAfter: 1,
+              args: ['always'],
+          },
+          {
+              desc: 'setShowNamesMode()',
+              func: call.setShowNamesMode,
+              waitAfter: 1,
+              args: ['never'],
+          },
+          {
+              desc: 'setShowNamesMode()',
+              func: call.setShowNamesMode,
+              waitAfter: 1,
+              args: [false],
+          },
+          {
+              desc: 'setDailyLang()',
+              func: call.setDailyLang,
+              waitAfter: 1,
+              args: ['fi'],
+          },
+          {
+              desc: 'setBandwidth()',
+              func: call.setBandwidth,
+              waitAfter: 1,
+              args: [{kbs: 'NO_CAP'}],
+          },
+        ];
+    }
+    
+    function throwLocalError() {
+      console.log('<<<< Throw local uncaught error >>>>');
+      // const throwError = () => { throw new Error('some other other error')};
+      // throwError();
+      let a = {};
+      a.b.local = 'BAD';
+      console.log('====================================');
+    }
+    function throwDailyError() {
+      console.log('<<<< Throw daily uncaught error >>>>');
+      call.startCamera();
+      console.log('====================================');
+    }
+    async function runAmok() {
+        const peerId = Object.keys(call.participants()).filter((id) => id !== 'local')[0];
+        let t = 0;
+        const calls = api_calls(peerId);
+        console.log ('RUNNING AMOK!')
+        console.log('----------------------');
+        for (var c of calls) {
+            setTimeout(async (cc) => {
+                let args = cc.args ? cc.args : [];
+                console.log(`> > > ${cc.desc}(${args})`);
+                if (cc.shouldAwait) {
+                    await cc.func.apply(call, args);
+                } else {
+                    cc.func.apply(call, args);
+                }
+                console.log('========');
+            }, t * 1000, c);
+            t = t + c.waitAfter;
+        }
+      }
+
+      async function leave() {
+        call.leave();
+      }
+
+      async function subscribeAll() {
+        let updateList = {};
+        for (let id in call.participants()) {
+          if (id === "local") {
+            continue;
+          }
+          updateList[id] = { setSubscribedTracks: true };
+        }
+        console.log("!!! UPDATE LIST", updateList);
+        call.updateParticipants(updateList);
+      }
+
+      function unsubscribeAll() {
+        let updateList = {};
+        for (let id in call.participants()) {
+          if (id === "local") {
+            continue;
+          }
+          updateList[id] = {
+            setSubscribedTracks: {
+              video: false,
+              audio: true,
+            },
+          };
+        }
+        console.log("!!! UPDATE LIST", updateList);
+        call.updateParticipants(updateList);
+      }
+
+      function displayTrack(evt) {
+        console.log("!!! TRACK STARTED", evt);
+        if (evt.track.kind === "video") {
+          displayVideo(evt);
+        } else {
+          playAudio(evt);
+        }
+      }
+
+      function displayVideo(evt) {
+        console.log(evt);
+        let videosDiv = document.getElementById("videos");
+        let videoEl = document.createElement("video");
+        videosDiv.appendChild(videoEl);
+        videoEl.style.width = "100%";
+        videoEl.srcObject = new MediaStream([evt.track]);
+        videoEl.play();
+      }
+
+      function playAudio(evt) {
+        if (evt.participant.local) {
+          return;
+        }
+        let audioEl = document.createElement("audio");
+        document.body.appendChild(audioEl);
+        audioEl.srcObject = new MediaStream([evt.track]);
+        audioEl.play();
+      }
+
+      function destroyTrack(evt) {
+        console.log(
+          "!!! TRACK STOPPED",
+          evt.kind,
+          evt.participant && evt.participant.session_id
+        );
+        let els = Array.from(document.getElementsByTagName("video")).concat(
+          Array.from(document.getElementsByTagName("audio"))
+        );
+        for (let el of els) {
+          if (el.srcObject && el.srcObject.getTracks()[0] === evt.track) {
+            el.remove();
+          }
+        }
+      }
+
+      function logEvent(evt) {
+        console.log('DAILY EVENT!');
+        console.log(evt);
+        console.log('-----------');
+      }
+    </script>
+  </body>
+</html>

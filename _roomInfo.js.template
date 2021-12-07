@@ -1,0 +1,58 @@
+const ROOM_URLS = {
+  staging: {
+    public: "",
+    private: "",
+  },
+  production: {
+    public: "https://<domain>.daily.co/public",
+    private: "https://<domain>.daily.co/private",
+  },
+  ngrok: {
+    public:
+      "https://<>.ngrok.io/public?domain=<domain>&customHost=<>",
+    private:
+      "https://<>.ngrok.io/private?domain=<domain>&customHost=<>",
+  },
+  local: {
+    public:
+      "https://<>:8000/public?domain=<domain>&customHost=<>:8000",
+    private:
+      "https://<>:8000/private?domain=<domain>&customHost=<>:8000",
+  },
+  localSFU: {
+    public:
+      "https://<>:8000/public?domain=<domain>&customHost=<>:8000&bypassRegionDetection=true",
+    private:
+      "https://<>:8000/private?domain=<domain>&customHost=<>:8000&bypassRegionDetection=true",
+  },
+  preview: {
+    public:
+      "https://preview-<>/public?domain=<domain>&customHost=preview-<>",
+    private:
+      "https://preview-<>/private?domain=<domain>&customHost=preview-<>",
+  },
+};
+window.ROOM_URLS = ROOM_URLS;
+
+const TOKENS = {
+  staging: {
+    private: {
+      owner: "",
+    },
+  },
+  production: {
+    robots: {
+      owner: "",
+    },
+    private: {
+      owner: "",
+    },
+  },
+  invalid: "",
+};
+window.TOKENS = TOKENS;
+
+const API_KEYS = {
+  staging: "",
+  production: "",
+};
