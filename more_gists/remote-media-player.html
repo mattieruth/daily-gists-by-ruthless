@@ -27,8 +27,6 @@
     
     <script>
       async function main() {
-        window.ROOM_URL = ROOM_URLS.localSFU.websockets;
-        window.OWNER_TOKEN = OWNER_TOKEN;
         window.call = DailyIframe.createCallObject({
           // WHILE ALONE IN A ROOM, IF audioSource and videoSource ARE false
           // trying to start the live stream will fail
@@ -61,8 +59,8 @@
       }
       
       async function joinAsOwner() {
-        await call.join({ url: ROOM_URL, token: OWNER_TOKEN, subscribeToTracksAutomatically: true });
-        // await call.join({ url: ROOM_URL, token: t});
+        await call.join({ url: window.ROOM_URL, token: window.JOIN_TOKEN, subscribeToTracksAutomatically: true });
+        // await call.join({ url: window.ROOM_URL, token: t});
         console.log('me -->', call.participants().local);
       }
       

@@ -19,8 +19,6 @@
 
     <script>
       async function main() {
-        window.ROOM_URL = ROOM_URLS.local.websockets;
-
         const urlParams = new URLSearchParams(window.location.search);
         var callObjectMode = !urlParams.has('prebuilt');
         if (callObjectMode) {
@@ -53,7 +51,7 @@
         }
         call.on("active-speaker-change",
                 (e) => console.log('active speaker change event', e.activeSpeaker.peerId));
-        let p = await call.join({ url: ROOM_URL });
+        let p = await call.join({ url: window.ROOM_URL });
       }
 
       function subscribe(evt) {

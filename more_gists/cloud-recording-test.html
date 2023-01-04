@@ -21,11 +21,9 @@
     <div id="videos"></div>
     <div id="audios"></div>
     <script>
-      const ROOM_URL = window.ROOM_URLS.staging.private;
-
       async function main() {
         window.call = DailyIframe.createCallObject({
-          url: ROOM_URL,
+          url: window.ROOM_URL,
           subscribeToTracksAutomatically: true,
           dailyConfig: {
             experimentalChromeVideoMuteLightOff: true

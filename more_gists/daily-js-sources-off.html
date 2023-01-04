@@ -23,8 +23,6 @@
     <div id="videos" style="display: flex; flex-wrap: wrap;"></div>
 
     <script>
-      const ROOM_URL = ROOM_URLS.staging.websockets;
-
       async function main() {
 
         window.call = DailyIframe.createCallObject({
@@ -47,7 +45,7 @@
         console.log('devices', devices);
 
         // join the session
-        await call.join({ url: ROOM_URL });
+        await call.join({ url: window.ROOM_URL });
 
         // set up an interval callback to update the stats display at the top of the page
         setInterval(updateStatsDisplay, 1000);
@@ -55,7 +53,7 @@
 
       async function join() {
         console.log('join');
-        await call.join({ url: ROOM_URL });
+        await call.join({ url: window.ROOM_URL });
       }
 
       async function leave() {

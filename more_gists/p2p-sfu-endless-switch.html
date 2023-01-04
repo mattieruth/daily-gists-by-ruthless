@@ -33,8 +33,6 @@
       }
 
       async function main() {
-        window.ROOM_URL = ROOM_URLS.staging.sfu1;
-
         await join();
         call.on("track-started", displayTrack);
         call.on("track-stopped", destroyTrack);

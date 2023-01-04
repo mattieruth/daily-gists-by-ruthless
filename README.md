@@ -29,3 +29,8 @@ $ ./run_server <port>
 
 2. The above will open the folder in your browser. Simply find the gist you want
    to work with
+
+## Changing your room or adding a token
+
+Just change which room `window.ROOM_URL` points to or `window.JOIN_TOKEN` points
+to in your `_roomInfo.js` file.

@@ -17,7 +17,6 @@
 
     <script>
       async function main() {
-        window.ROOM_URL = ROOM_URLS.staging.robots;
 
         const urlParams = new URLSearchParams(window.location.search);
         var callObjectMode = !urlParams.has('prebuilt');
@@ -116,8 +115,8 @@
 
       function join() {
         try {
-          console.log('JOIN ', ROOM_URL);
-          call.join({url: ROOM_URL});
+          console.log('JOIN ', window.ROOM_URL);
+          call.join({url: window.ROOM_URL});
         } catch(e) {
           console.error ('join failed!', e);
         }
@@ -125,8 +124,8 @@
 
       function joinWithToken() {
         try {
-          console.log('JOIN ', ROOM_URL);
-          call.join({url: ROOM_URL, token: JOIN_TOKEN});
+          console.log('JOIN ', window.ROOM_URL);
+          call.join({url: window.ROOM_URL, token: window.JOIN_TOKEN});
         } catch(e) {
           console.error ('join failed!', e);
         }

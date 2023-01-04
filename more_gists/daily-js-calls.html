@@ -20,7 +20,6 @@
       async function main() {
         const urlParams = new URLSearchParams(window.location.search);
         var callObjectMode = !urlParams.has('iframe');
-        const ROOM_URL = ROOM_URLS.staging.websockets;
         if (callObjectMode) {
           window.call = DailyIframe.createCallObject({
             subscribeToTracksAutomatically: true,
@@ -50,7 +49,7 @@
           window.call = call;
         }
         console.log('!!!DAILY!!! Call Join')
-        let p = await call.join({ url: ROOM_URL });
+        let p = await call.join({ url: window.ROOM_URL });
         console.log('!!!DAILY!!! Join Await complete');
         console.log('meeting joined', p);
         console.log('local id:', p.local.session_id);

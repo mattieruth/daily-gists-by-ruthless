@@ -24,8 +24,6 @@
       let currentlySubscribedIDs = [];
 
       async function main() {
-        const ROOM_URL = ROOM_URLS.staging.websockets;
-
         console.log('createCallObject');
         window.call = DailyIframe.createCallObject({
           subscribeToTracksAutomatically: false,
@@ -49,7 +47,7 @@
             var videoTrack = mediaStream.getVideoTracks()[0];
             var audioTrack = mediaStream.getAudioTracks()[0];
             console.log(`videoTrack:`, videoTrack);
-            await call.setInputDevicesAsync({videoSource: videoTrack}).then(function () {
+            await call.setInputDevicesAsync({videoSource: videoTrack}).then(async function () {
               console.log('setLocaVideo');
               call.setLocalVideo(true);
               await call.setInputDevicesAsync({audioSource: audioTrack}).then(function () {
@@ -60,7 +58,7 @@
 
         // join the session
         console.log('join call');
-        await call.join({ url: ROOM_URL });
+        await call.join({ url: window.ROOM_URL });
         // set up an interval callback to update the stats display at the top of the page
         setInterval(updateStatsDisplay, 1000);
       }

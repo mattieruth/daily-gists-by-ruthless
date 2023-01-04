@@ -26,9 +26,6 @@
     </div>
 
     <script>
-      window.ROOM_URL = ROOM_URLS.production.robots;
-      window.OWNER_TOKEN = TOKENS.production.robots.owner;
-
       async function main() {
         window.call = DailyIframe.createCallObject({
 
@@ -95,8 +92,8 @@
       }
 
       async function joinAsOwner() {
-        await call.join({ url: ROOM_URL, token: window.OWNER_TOKEN, subscribeToTracksAutomatically: false });
-        // await call.join({ url: ROOM_URL, token: t});
+        await call.join({ url: window.ROOM_URL, token: window.JOIN_TOKEN, subscribeToTracksAutomatically: false });
+        // await call.join({ url: window.ROOM_URL, token: t});
         console.log('me -->', call.participants().local);
       }
 

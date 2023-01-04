@@ -20,8 +20,6 @@
 
     <script>
       async function main() {
-        window.ROOM_URL = ROOM_URLS.ngrok.robots;
-
         const urlParams = new URLSearchParams(window.location.search);
         var callObjectMode = !urlParams.has('prebuilt');
         if (callObjectMode) {
@@ -127,7 +125,7 @@
       }
 
       function join() {
-        call.join({url: ROOM_URL});
+        call.join({url: window.ROOM_URL});
       }
 
       function handleJoin(e) {

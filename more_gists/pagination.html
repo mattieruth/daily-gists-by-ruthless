@@ -24,8 +24,6 @@
       let currentlySubscribedIDs = [];
 
       async function main() {
-        const ROOM_URL = ROOM_URLS.local.sfu1;
-
         window.call = DailyIframe.createCallObject({
           subscribeToTracksAutomatically: false,
           dailyConfig: {
@@ -40,7 +38,7 @@
         call.on('track-stopped', destroyTrack);
 
         // join the session
-        await call.join({ url: ROOM_URL });
+        await call.join({ url: window.ROOM_URL });
 
         // set up an interval callback to update the stats display at the top of the page
         setInterval(updateStatsDisplay, 1000);

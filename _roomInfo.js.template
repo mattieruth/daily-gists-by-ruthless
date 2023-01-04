@@ -2,6 +2,7 @@ const ROOM_URLS = {
   staging: {
     public: "",
     private: "",
+    mySpecialRoom: "",
   },
   production: {
     public: "https://<domain>.daily.co/public",
@@ -33,15 +34,19 @@ const ROOM_URLS = {
   },
 };
 window.ROOM_URLS = ROOM_URLS;
+window.ROOM_URL = ROOM_URLS.staging.public;
 
 const TOKENS = {
   staging: {
+    public: {
+      owner: "",
+    },
     private: {
       owner: "",
     },
   },
   production: {
-    robots: {
+    public: {
       owner: "",
     },
     private: {
@@ -51,6 +56,7 @@ const TOKENS = {
   invalid: "",
 };
 window.TOKENS = TOKENS;
+window.JOIN_TOKEN = TOKENS.staging.public;
 
 const API_KEYS = {
   staging: "",
