@@ -9,19 +9,18 @@
   <body onload="main()">
     <div id="local-controls" style="width: 50%; float: left">
       <button onclick="createCallObject()">createCallObject</button>
+      <button onclick="createIFrame()">createIFrame</button>
+      <button onclick="destroyExisting()">destroyExisting</button>
       <hr />
     </div>
     <div id="videos" style="margin-left: 50%"></div>
 
     <script>
       function main() {
-        window.ROOM_URL = ROOM_URL.staging.robots;
-
         window.calls = [];
       }
 
       async function createCallObject() {
-        const urlParams = new URLSearchParams(window.location.search);
         let call = DailyIframe.createCallObject({
           subscribeToTracksAutomatically: true,
           dailyConfig: {
@@ -53,6 +52,47 @@
         call.on("active-speaker-change",
                 (e) => console.log('active speaker change event', e.activeSpeaker.peerId));
         call.on("error", (e) => console.error('DAILY SENT AN ERROR!', e));
+      }
+
+      async function createIFrame() {
+        let call = DailyIframe.createFrame({
+          subscribeToTracksAutomatically: true,
+          dailyConfig: {
+            experimentalChromeVideoMuteLightOff: true,
+          },
+          userName: window.calls.length,
+        });
+        call._instanceName = window.calls.length;
+        window.calls.push(call);
+
+        logMeetingState(call);
+        call.on('loading', logMeetingState);
+        call.on('loaded', logMeetingState);
+        call.on('started-camera', logMeetingState);
+        call.on('joining-meeting', logMeetingState);
+        call.on('joined-meeting', logMeetingState);
+        call.on('left-meeting', logMeetingState);
+        call.on('access-state-updated', logMeetingState);
+
+        call.on("track-started", displayTrack);
+        call.on("track-stopped", destroyTrack);
+        // call.on("recording-started", logEvent);
+        // call.on("recording-stopped", logEvent);
+        // call.on("network-connection", logEvent);
+        // call.on("participant-left", handleParticipantLeft);
+        // call.on("participant-joined", handleParticipantJoined);
+        // call.on('participant-updated', handleParticipantUpdated);
+        // call.on("meeting-session-updated", logEvent);
+        call.on("active-speaker-change",
+                (e) => console.log('active speaker change event', e.activeSpeaker.peerId));
+        call.on("error", (e) => console.error('DAILY SENT AN ERROR!', e));
+      }
+
+      async function destroyExisting() {
+        let callPtr = DailyIframe.getCallInstance();
+        await callPtr.destroy();
+        console.log("@@@ destroyed");
+        window.calls.pop();
       }
 
       function logMeetingState(evt) {
