@@ -3,7 +3,7 @@
     <title>stream local video file</title>
     <script src="./_roomInfo.js"></script>
     <!-- <script src="./daily-iframe.js"></script> -->
-    <!-- <script src="https://unpkg.com/@daily-co/daily-js@0.31.0"></script> -->
+    <!-- <script src="https://unpkg.com/@daily-co/daily-js@0.44.1"></script> -->
     <script src="https://unpkg.com/@daily-co/daily-js"></script>
   </head>
   <body onload="main()">
@@ -22,49 +22,57 @@
         var callObjectMode = !urlParams.has('prebuilt');
         if (callObjectMode) {
           window.call = DailyIframe.createCallObject({
-            subscribeToTracksAutomatically: true,
-            dailyConfig: {
-              experimentalChromeVideoMuteLightOff: true,
-              musicMode: 'music'
-            },
+            // subscribeToTracksAutomatically: false,
+            // startAudioOff: true,
+            // startVideoOff: true,
+            audioSource: true,
+            videoSource: false,
+            // dailyConfig: {
+            //   v2CamAndMic: true,
+            //   // useDevicePreferenceCookies: true,
+            // },
+            // url: ROOM_URL,
             // userData: {
             //   favoriteMovie: 'goonies',
             // },
-            userName: 'mouth',
-            // token: window.TOKENS.staging.private.owner,
+            // userName: 'jackie joiner',
+            // token: window.JOIN_TOKEN,
           });
           window.callObject = window.call;
-          // window._dailyConfig.experimentalGetUserMediaConstraintsModify =(constraints) => {
-          //       constraints.video = false;
-          //       constraints.audio = false;
-          //     }
           call.on("track-started", displayTrack);
           call.on("track-stopped", destroyTrack);
+          call.on("joined-meeting", handleJoin);
+          call.on('participant-updated', logEvent);
           // call.on("recording-started", logEvent);
           // call.on("recording-stopped", logEvent);
           // call.on("network-connection", logEvent);
-          call.on("joined-meeting", handleJoin);
           // call.on("participant-left", handleParticipantLeft);
           // call.on("participant-joined", handleParticipantJoined);
-          // call.on('participant-updated', handleParticipantUpdated);
           // call.on("meeting-session-updated", logEvent);
         } else {
           let iframe = document.createElement("call-iframe-container");
           document.body.appendChild(iframe);
           window.call = DailyIframe.createFrame(iframe, {
+            startAudioOff: true,
+            startVideoOff: true,
+            // audioSource: false,
             dailyConfig: {
-              experimentalChromeVideoMuteLightOff: true,
-              // userMediaVideoConstraints: false,
-              // userMediaAudioConstraints: false,
+              // alwaysIncludeMicInPermissionPrompt: false,
             },
             showLeaveButton: true,
             userName: 'iFrame',
-            // activeSpeakerMode: false,
+            // url: ROOM_URL,
+            // token: window.JOIN_TOKEN,
           });
         }
         call.on("active-speaker-change",
                 (e) => console.log('active speaker change event', e.activeSpeaker.peerId));
-        call.on("error", (e) => console.error('DAILY SENT AN ERROR!', e));
+        call.on("error", (e) => {
+          console.error('DAILY SENT AN ERROR!', e);
+          if (e.error?.details?.sourceError) {
+            console.log('Original Error', e.error?.details?.sourceError);
+          }
+        });
       }
 
 
@@ -113,21 +121,32 @@
         }
       }
 
-      function join() {
+      async function aTimeout(ms) {
+        return new Promise((resolve) => setTimeout(() => resolve(), ms));
+      }
+
+      async function join() {
         try {
           console.log('JOIN ', window.ROOM_URL);
-          call.join({url: window.ROOM_URL});
+          await call.join({
+            url: window.ROOM_URL,
+            // userData: { broadcastFrom: "CHANNEL" },
+          });
+          // await call.join({url: window.ROOM_URL});
         } catch(e) {
           console.error ('join failed!', e);
         }
       }
 
-      function joinWithToken() {
+      async function joinWithToken() {
         try {
-          console.log('JOIN ', window.ROOM_URL);
-          call.join({url: window.ROOM_URL, token: window.JOIN_TOKEN});
+          console.log('JOIN WITH TOKEN ', window.ROOM_URL);
+          await call.join({
+            url: window.ROOM_URL,
+            token: window.JOIN_TOKEN,
+          });
         } catch(e) {
-          console.error ('join failed!', e);
+          console.error (`join failed!: ${e}`);
         }
       }
 
