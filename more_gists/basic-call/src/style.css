@@ -1,0 +1,22 @@
+#local-controls {
+    padding: 5px;
+}
+
+button {
+    margin: 2px;
+}
+
+.flex-container {
+    display: flex;
+    flex-direction: column;
+}
+
+#videos {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+}
+
+video {
+    width: 33%;
+}
