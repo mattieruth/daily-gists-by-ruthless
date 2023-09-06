@@ -2,37 +2,70 @@
     <head>
         <title>gUM testing</title>
     </head>
-    <body>
+    <body onload="main()">
         <header>enumerateDevices chrome bug</header>
         <video id="videoLocal"></video>
+        <audio id="audioLocal"></audio>
         <br/>
+        <hr />
         <button onclick="stopStream()">stop</button>
         <button onclick="startStream()">start</button>
-        <button onclick='logDevices()'>log devices</button>
+        <button onclick='updateDevices()'>update devices</button>
+        <br/>
+        <div id="local-controls" style="width: 50%; float: left">
+            <label for="microphone">Microphone:</label><select name="microphone" id="mic-picker"></select>
+            <input type="checkbox" id="gumAudio" name="audioBtn" checked>
+            <label for="audioBtn">gUM for Audio</label>
+            <br/>
+            <label for="camera">Camera:</label><select name="camera" id="cam-picker"></select>
+            <input type="checkbox" id="gumVideo" name="videoBtn">
+            <label for="videoBtn">gUM for Video</label>
+        </div>
+      
         <script>
             var streamObj = null,
-              video = null;
+              video = null,
+              audio = null
+              devices = null;
 
-            document.addEventListener("DOMContentLoaded", function(event) {
-                //The video object
+            async function main() {
+                // Grab the media elements
                 video = document.getElementById('videoLocal');
-            });
+                audio = document.getElementById('audioLocal');
+                await updateDevices();
+            };
 
             async function startStream() {
-                //Browser compatibility
+                // Browser compatibility
                 let gUM = navigator.mediaDevices.getUserMedia;
-                //Check if the user media is supported
+                // Check if the user media is supported
                 if (gUM) {
-                        try {
-                        //Request for the user media
-                    console.log('YUM. gUM')
-                    let stream = await navigator.mediaDevices.getUserMedia(
-                        {
-                            audio: false,
-                            video: false,
+                    try {
+                        // Request for the user media
+                        console.log('YUM. gUM')
+                        let constraints = {
+                            audio: shouldGumAudio(),
+                            video: shouldGumVideo(),
+                        };
+                        const audioID = constraints.audio && getAudioDeviceId();
+                        if (audioID) {
+                            constraints.audio = {
+                                "optional":[{
+                                    "sourceId": audioID
+                                }]
+                            };
                         }
-                        );
-                    onSuccess(stream);
+                        const videoID = constraints.video && getVideoDeviceId();
+                        if (videoID) {
+                            constraints.video = {
+                                "optional":[{
+                                    "sourceId": videoID
+                                }]
+                            };
+                        }
+                        console.log('gUM constrains', constraints);
+                        let stream = await navigator.mediaDevices.getUserMedia(constraints);
+                        onSuccess(stream);
                     } catch (e) {
                         onErrors(e);
                     }
@@ -41,38 +74,113 @@
                 }
             }
 
+            function shouldGumAudio() {
+                const audioBtn = document.getElementById('gumAudio');
+                return audioBtn?.checked;
+            }
+
+            function getAudioDeviceId() {
+                const micPicker = document.getElementById('mic-picker');
+                const selectedDeviceLabel = micPicker.value;
+                if (selectedDeviceLabel.includes('Default')) {
+                    return null;
+                }
+                const d = devices.find((d) => d.kind === 'audioinput' && d.label === selectedDeviceLabel);
+                return d?.deviceId;
+            }
+
+            function getVideoDeviceId() {
+                const camPicker = document.getElementById('cam-picker');
+                const selectedDeviceLabel = camPicker.value;
+                if (selectedDeviceLabel.includes('Default')) {
+                    return null;
+                }
+                const d = devices.find((d) => d.kind === 'videoinput' && d.label === selectedDeviceLabel);
+                return d?.deviceId;
+            }
+
+            function shouldGumVideo() {
+                const videoBtn = document.getElementById('gumVideo');
+                return videoBtn?.checked;
+            }
+
             function onSuccess(stream) {
-                    console.log('SUCCESS', stream);
-                if (stream && stream.getVideoTracks()[0]) {
-                //Play the media stream in the video element
+                if (!stream) {
+                    console.error('no stream provided from gUM');
+                    return;
+                }
+                console.log('SUCCESS', stream);
                 streamObj = stream;
-                let vidTrack = stream.getVideoTracks()[0];
-                console.log(vidTrack.getSettings());
-                video.srcObject = stream;
-                video.play();
-                    }    
+                if (stream.getVideoTracks()[0]) {
+                    // Play the media stream in the video element
+                    let vidTrack = stream.getVideoTracks()[0];
+                    vidTrack.onended = (event) => {
+                        warn(
+                          `Local ${vidTrack.kind} track ended (${event.target.id}).`
+                        );
+                    };
+                    console.log(vidTrack.getSettings());
+                    video.srcObject = stream;
+                    video.play();
+                }
+                if (stream.getAudioTracks()[0]) {
+                    // Play the media stream in the audio element
+                    let micTrack = stream.getAudioTracks()[0];
+                    micTrack.onended = (event) => {
+                        console.warn(
+                          `Local ${micTrack.kind} track ended (${event.target.id}).`
+                        );
+                    };
+                    console.log(micTrack.getSettings());
+                    audio.srcObject = stream;
+                    audio.play();
+                }
             }
 
             function onErrors(error) {
-                //Handle the permission denied error in Chrome and 'Starting video failed' error in Firefox
+                // Handle the permission denied error in Chrome and 'Starting video failed' error in Firefox
                 if (error.name == "PermissionDeniedError" || error == "Starting video failed") {
                     alert("Media might already be in use");
-                } else { //Handle all other errors
+                    console.error("Media might already be in use");
+                } else { // Handle all other errors
                     console.log("error: ", error.name);
                     console.error(error);
                 }
             }
 
-            async function logDevices() {
-                navigator.mediaDevices.enumerateDevices().then(
-                (devices) => console.log(devices));
+            async function updateDevices() {
+                // fill in device options
+                console.log('updateDevices...');
+                let micPicker = document.getElementById('mic-picker');
+                micPicker.replaceChildren();
+                let camPicker = document.getElementById('cam-picker');
+                camPicker.replaceChildren();
+                devices = await navigator.mediaDevices.enumerateDevices();
+                console.log(`${devices.length} devices found`);
+                devices.forEach((d) => {
+                    console.log(`${d.kind}: ${d.label} (${d.id})`);
+                    if (d.kind === 'audioinput') {
+                        let el = document.createElement('option');
+                        el.textContent = d.label;
+                        el.value = d.label;
+                        micPicker.appendChild(el);
+                    }
+                    if (d.kind === 'videoinput') {
+                        let el = document.createElement('option');
+                        el.textContent = d.label;
+                        el.value = d.label;
+                        camPicker.appendChild(el);
+                    }
+                })
             }
 
             function stopStream() {
-                let vidTrack = streamObj.getVideoTracks()[0];
-                console.log(vidTrack.getSettings());
-                vidTrack.stop();
+                for (t of streamObj.getTracks()) {
+                    console.log(`stopping ${t.kind} track (${t.id})`);
+                    console.log(t.getSettings());
+                    t.stop();
+                }
             }
-        </script>
+    </script>
     </body>
 </html>

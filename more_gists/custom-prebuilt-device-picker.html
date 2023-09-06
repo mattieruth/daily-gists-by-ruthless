@@ -39,7 +39,7 @@
             userName: 'iFrame',
         });
 
-        await call.load({url: 'https://daily-prebuilt-ui-static-8degsula6-daily-co.vercel.app/robots?domain=ruthless.staging'});//ROOM_URL});
+        await call.load({url: ROOM_URL});
         console.log("loaded");
         const micPicker = document.getElementById('mic-picker');
         const selectedDeviceLabel = micPicker.value;

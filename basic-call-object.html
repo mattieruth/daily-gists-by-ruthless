@@ -3,7 +3,7 @@
     <title>stream local video file</title>
     <script src="./_roomInfo.js"></script>
     <!-- <script src="./daily-iframe.js"></script> -->
-    <!-- <script src="https://unpkg.com/@daily-co/daily-js@0.44.1"></script> -->
+    <!-- <script src="https://unpkg.com/@daily-co/daily-js@0.48"></script> -->
     <script src="https://unpkg.com/@daily-co/daily-js"></script>
   </head>
   <body onload="main()">
@@ -17,16 +17,15 @@
 
     <script>
       async function main() {
-
         const urlParams = new URLSearchParams(window.location.search);
-        var callObjectMode = !urlParams.has('prebuilt');
+        var callObjectMode = !urlParams.has("prebuilt");
         if (callObjectMode) {
           window.call = DailyIframe.createCallObject({
             // subscribeToTracksAutomatically: false,
             // startAudioOff: true,
             // startVideoOff: true,
-            audioSource: true,
-            videoSource: false,
+            // audioSource: true,
+            // videoSource: false,
             // dailyConfig: {
             //   v2CamAndMic: true,
             //   // useDevicePreferenceCookies: true,
@@ -42,7 +41,7 @@
           call.on("track-started", displayTrack);
           call.on("track-stopped", destroyTrack);
           call.on("joined-meeting", handleJoin);
-          call.on('participant-updated', logEvent);
+          call.on("participant-updated", logEvent);
           // call.on("recording-started", logEvent);
           // call.on("recording-stopped", logEvent);
           // call.on("network-connection", logEvent);
@@ -60,21 +59,21 @@
               // alwaysIncludeMicInPermissionPrompt: false,
             },
             showLeaveButton: true,
-            userName: 'iFrame',
+            userName: "iFrame",
             // url: ROOM_URL,
             // token: window.JOIN_TOKEN,
           });
         }
-        call.on("active-speaker-change",
-                (e) => console.log('active speaker change event', e.activeSpeaker.peerId));
+        call.on("active-speaker-change", (e) =>
+          console.log("active speaker change event", e.activeSpeaker.peerId)
+        );
         call.on("error", (e) => {
-          console.error('DAILY SENT AN ERROR!', e);
+          console.error("DAILY SENT AN ERROR!", e);
           if (e.error?.details?.sourceError) {
-            console.log('Original Error', e.error?.details?.sourceError);
+            console.log("Original Error", e.error?.details?.sourceError);
           }
         });
       }
-
 
       function displayTrack(evt) {
         console.log("!!! TRACK STARTED", evt);
@@ -127,31 +126,31 @@
 
       async function join() {
         try {
-          console.log('JOIN ', window.ROOM_URL);
+          console.log("JOIN ", window.ROOM_URL);
           await call.join({
             url: window.ROOM_URL,
             // userData: { broadcastFrom: "CHANNEL" },
           });
           // await call.join({url: window.ROOM_URL});
-        } catch(e) {
-          console.error ('join failed!', e);
+        } catch (e) {
+          console.error("join failed!", e);
         }
       }
 
       async function joinWithToken() {
         try {
-          console.log('JOIN WITH TOKEN ', window.ROOM_URL);
+          console.log("JOIN WITH TOKEN ", window.ROOM_URL);
           await call.join({
             url: window.ROOM_URL,
             token: window.JOIN_TOKEN,
           });
-        } catch(e) {
-          console.error (`join failed!: ${e}`);
+        } catch (e) {
+          console.error(`join failed!: ${e}`);
         }
       }
 
       function handleJoin(e) {
-        console.log('!! i joined!', e);
+        console.log("!! i joined!", e);
         // console.log('!! participant counts', call.participantCounts());
       }
 
@@ -160,10 +159,11 @@
       }
 
       function logEvent(evt) {
-        console.log('DAILY EVENT!');
+        console.log("DAILY EVENT!");
         console.log(evt);
-        console.log('-----------');
+        console.log("-----------");
       }
     </script>
   </body>
-</html>/
+</html>
+/
