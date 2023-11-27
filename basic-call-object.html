@@ -110,7 +110,8 @@
           evt.kind,
           evt.participant && evt.participant.session_id
         );
-        let els = Array.from(document.getElementsByTagName("video")).concat(
+        let videosDiv = document.getElementById("videos");
+        let els = Array.from(videosDiv.getElementsByTagName("video")).concat(
           Array.from(document.getElementsByTagName("audio"))
         );
         for (let el of els) {
