@@ -1,114 +1,66 @@
-
 <html>
   <head>
     <title>Daily.co Call Object Demo</title>
+    <script src="../commonGistUtils.js"></script>
     <script src="../_roomInfo.js"></script>
-    <script src="../daily-iframe.js"></script>
-    <!-- <script src="https://unpkg.com/@daily-co/daily-js"></script> -->
   </head>
   <body onload="main()">
-    <div id="controls">
+    <div id="local-controls" style="width: 50%; float: left">
       <input type="text" id="rectype" value="cloud-beta" />
       <button id="join" onclick="joinRoom()">Join Room</button>
       <button id="leave" onclick="leaveRoom()">Leave Room</button>
-      <button onclick="startRecording()">
-        Record
-      </button>
-      <button onclick="stopRecording()">
-        Stop Recording
-      </button>
+      <button onclick="startRecording()">Record</button>
+      <button onclick="stopRecording()">Stop Recording</button>
     </div>
-    <div id="videos"></div>
-    <div id="audios"></div>
+    <div id="videos" style="margin-left: 50%"></div>
+
     <script>
       async function main() {
-        window.call = DailyIframe.createCallObject({
+        createDailyInstance({
           url: window.ROOM_URL,
-          subscribeToTracksAutomatically: true,
-          dailyConfig: {
-            experimentalChromeVideoMuteLightOff: true
-          }
         });
 
-        call.on("track-started", startTrack);
-        call.on("track-stopped", stopTrack);
-        call.on("participant-updated", (e) => {
-          console.log("🐟 recstate.html participant updated: ", e);
-        })
-        call.on("participant-joined", (e) => {
-          console.log("🐟 recstate.html participant joined: ", e);
-        })
-        call.on("recording-started", e => {
-          console.log("🐟 recstate.html recording started: ", e);
+        call.on('participant-updated', (e) => {
+          console.log('🐟 recstate.html participant updated: ', e);
         });
-        call.on("recording-stopped", e => {
-          console.log("🐟 recstate.html recording stopped: ", e);
+        call.on('participant-joined', (e) => {
+          console.log('🐟 recstate.html participant joined: ', e);
         });
-        call.on("joined-meeting", e => {
-          console.log("🐟 recstate.html joined-meeting: ", e);
-
-        })
-      }
-
-      function startTrack(evt) {
-        console.log("track started: ", evt);
-        if (evt.track.kind === "audio") {
-          let audiosDiv = document.getElementById("audios");
-          let audioEl = document.createElement("audio");
-          audiosDiv.appendChild(audioEl);
-          audioEl.style.width = "100%";
-          audioEl.srcObject = new MediaStream([evt.track]);
-          audioEl.play();
-        } else if (evt.track.kind === "video") {
-          let videosDiv = document.getElementById("videos");
-          let videoEl = document.createElement("video");
-          videosDiv.appendChild(videoEl);
-          videoEl.style.width = "100%";
-          videoEl.srcObject = new MediaStream([evt.track]);
-          videoEl.play();
-        }
-      }
-
-      function stopTrack(evt) {
-        let vids = document.getElementsByTagName("video");
-        for (let vid of vids) {
-          if (
-            vid.srcObject &&
-            vid.srcObject.getVideoTracks()[0] === evt.track
-          ) {
-            vid.remove();
-          }
-        }
+        call.on('recording-started', (e) => {
+          console.log('🐟 recstate.html recording started: ', e);
+        });
+        call.on('recording-stopped', (e) => {
+          console.log('🐟 recstate.html recording stopped: ', e);
+        });
+        call.on('joined-meeting', (e) => {
+          console.log('🐟 recstate.html joined-meeting: ', e);
+        });
       }
 
       async function createMeetingToken(properties) {
         let response = await fetch(
-          "https://api.staging.daily.co/v1/meeting-tokens",
+          'https://api.staging.daily.co/v1/meeting-tokens',
           {
-            method: "post",
+            method: 'post',
             headers: { Authorization: `Bearer ${API_KEYS.staging}` },
-            body: JSON.stringify({ properties })
+            body: JSON.stringify({ properties }),
           }
         );
         return (await response.json()).token;
       }
 
       async function joinRoom() {
-        var r = document.querySelector("input#rectype").value;
-        console.log("r: ", r);
+        var r = document.querySelector('input#rectype').value;
+        console.log('r: ', r);
         const token = await createMeetingToken({
-          enable_recording: document.querySelector("input#rectype").value,
-          is_owner: true
+          enable_recording: document.querySelector('input#rectype').value,
+          is_owner: true,
         });
-        await call.join({ token: token });
+        await join({ token: token });
       }
 
       async function leaveRoom() {
-        let vids = document.getElementsByTagName("video");
-        for (let vid of vids) {
-          vid.remove();
-        }
-        await call.leave();
+        await leave();
       }
 
       async function startRecording() {

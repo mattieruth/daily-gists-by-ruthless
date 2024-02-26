@@ -1,14 +1,12 @@
 <html>
   <head>
     <title>stream local video file</title>
+    <script src="../commonGistUtils.js"></script>
     <script src="../_roomInfo.js"></script>
-    <!-- <script src="../daily-iframe.js"></script> -->
-    <script src="https://unpkg.com/@daily-co/daily-js@0.44.1"></script>
-    <!-- <script src="https://unpkg.com/@daily-co/daily-js"></script> -->
   </head>
   <body onload="main()">
     <div id="local-controls" style="width: 50%; float: left">
-      <button onclick="createCallObject()">createCallObject</button>
+      <button onclick="createMultiCallObjects()">createCallObject</button>
       <button onclick="createIFrame()">createIFrame</button>
       <button onclick="destroyExisting()">destroyExisting</button>
       <hr />
@@ -22,19 +20,20 @@
 
       const handleSetCallObject = async () => {
         try {
-          const newCallObject = DailyIframe.createCallObject({
-            strictMode: true /** 
-            This will throw an error if you try to call DailyIframe.createCallObject() more than once on the same page.
-            @ref https://github.com/daily-co/daily-js/blob/4324dd75b5eb5e0c04bf74d212a9af9c40fa694b/README.md#duplicate-call-instances-will-not-be-allowed
-          */,
+          let config = {
+            strictMode: true /**
+              This will throw an error if you try to call DailyIframe.createCallObject() more than once on the same page.
+              @ref https://github.com/daily-co/daily-js/blob/4324dd75b5eb5e0c04bf74d212a9af9c40fa694b/README.md#duplicate-call-instances-will-not-be-allowed
+            */,
             dailyConfig: {
-              experimentalChromeVideoMuteLightOff: true,
               camSimulcastEncodings: simulcastSettingsArray(
-                DEFAULT_SIMULCAST_SETTINGS,
+                DEFAULT_SIMULCAST_SETTINGS
               ),
 
               ...(INTERNAL_FLAGS.EXPERIMENTAL_FLAG
-                ? { screenSimulcastEncodings: DEFAULT_SCREEN_SIMULCAST_SETTINGS }
+                ? {
+                    screenSimulcastEncodings: DEFAULT_SCREEN_SIMULCAST_SETTINGS,
+                  }
                 : {}),
 
               userMediaAudioConstraints: {
@@ -50,8 +49,8 @@
                * Docs on encoding settings: https://developer.mozilla.org/en-US/docs/Web/API/RTCRtpSendParameters/encodings
                */
             },
-          });
-          window.callObject = newCallObject;
+          };
+          const newCallObject = createDailyInstance(config);
           // setCallObject(newCallObject);
         } catch (e) {
           catchError(e, ERROR_MOD.VIDEO);
@@ -63,26 +62,34 @@
       };
       window.handleSetCallObject = handleSetCallObject;
 
-  // /* 1. set dailyCoCallObject */
-  // useEffect(() => {
-  //   if (callObject) return;
-  //   handleSetCallObject();
-  // }, []);
+      // /* 1. set dailyCoCallObject */
+      // useEffect(() => {
+      //   if (callObject) return;
+      //   handleSetCallObject();
+      // }, []);
+
+      async function createMultiCallObjects() {
+        setTimeout(createCallObject(), 0);
+        setTimeout(createCallObject(), 0);
+      }
 
       async function createCallObject() {
-        let call;
-        try {call = DailyIframe.createCallObject({
+        callObjectMode = true;
+        const config = {
           subscribeToTracksAutomatically: true,
           dailyConfig: {
             experimentalChromeVideoMuteLightOff: true,
           },
           userName: window.calls.length,
-          strictMode: false
-        });
-      } catch (e) {
-        console.log("aha! i caught you!", e);
-        return;
-      }
+          strictMode: false,
+        };
+        let call;
+        try {
+          call = createDailyInstance(config);
+        } catch (e) {
+          console.log('aha! i caught you!', e);
+          return;
+        }
         call._instanceName = window.calls.length;
         window.calls.push(call);
 
@@ -94,27 +101,11 @@
         call.on('joined-meeting', logMeetingState);
         call.on('left-meeting', logMeetingState);
         call.on('access-state-updated', logMeetingState);
-
-        call.on("track-started", displayTrack);
-        call.on("track-stopped", destroyTrack);
-        // call.on("recording-started", logEvent);
-        // call.on("recording-stopped", logEvent);
-        // call.on("network-connection", logEvent);
-        // call.on("participant-left", handleParticipantLeft);
-        // call.on("participant-joined", handleParticipantJoined);
-        // call.on('participant-updated', handleParticipantUpdated);
-        // call.on("meeting-session-updated", logEvent);
-        call.on("active-speaker-change",
-                (e) => console.log('active speaker change event', e.activeSpeaker.peerId));
-        call.on("error", (e) => console.error('DAILY SENT AN ERROR!', e));
       }
 
       async function createIFrame() {
-        let call = DailyIframe.createFrame({
-          subscribeToTracksAutomatically: true,
-          dailyConfig: {
-            experimentalChromeVideoMuteLightOff: true,
-          },
+        callObjectMode = false;
+        let call = createDailyInstance({
           userName: window.calls.length,
         });
         call._instanceName = window.calls.length;
@@ -128,87 +119,23 @@
         call.on('joined-meeting', logMeetingState);
         call.on('left-meeting', logMeetingState);
         call.on('access-state-updated', logMeetingState);
-
-        call.on("track-started", displayTrack);
-        call.on("track-stopped", destroyTrack);
-        // call.on("recording-started", logEvent);
-        // call.on("recording-stopped", logEvent);
-        // call.on("network-connection", logEvent);
-        // call.on("participant-left", handleParticipantLeft);
-        // call.on("participant-joined", handleParticipantJoined);
-        // call.on('participant-updated', handleParticipantUpdated);
-        // call.on("meeting-session-updated", logEvent);
-        call.on("active-speaker-change",
-                (e) => console.log('active speaker change event', e.activeSpeaker.peerId));
-        call.on("error", (e) => console.error('DAILY SENT AN ERROR!', e));
       }
 
       async function destroyExisting() {
         let callPtr = DailyIframe.getCallInstance();
         await callPtr.destroy();
-        console.log("@@@ destroyed");
+        console.log('@@@ destroyed');
         window.calls.pop();
       }
 
       function logMeetingState(evt) {
-        console.log("!!! MEETING STATE UPDATED", evt.action);
+        console.log('!!! MEETING STATE UPDATED', evt.action);
         if (window.store && window.store.getState) {
-          console.log("!!! Window STATE", store.getState().lifecycle.status);
+          console.log('!!! Window STATE', store.getState().lifecycle.status);
         }
-        calls.forEach(call => {
+        calls.forEach((call) => {
           console.log(`${call._instanceName}: ${call.meetingState()}`);
         });
-      }
-
-      function displayTrack(evt) {
-        console.log("!!! TRACK STARTED", evt);
-        if (evt.track.kind === "video") {
-          displayVideo(evt);
-        } else {
-          playAudio(evt);
-        }
-      }
-
-      function displayVideo(evt) {
-        console.log(evt);
-        let videosDiv = document.getElementById("videos");
-        let videoEl = document.createElement("video");
-        videosDiv.appendChild(videoEl);
-        videoEl.style.width = "100%";
-        videoEl.srcObject = new MediaStream([evt.track]);
-        videoEl.play();
-      }
-
-      function playAudio(evt) {
-        if (evt.participant.local) {
-          return;
-        }
-        let audioEl = document.createElement("audio");
-        document.body.appendChild(audioEl);
-        audioEl.srcObject = new MediaStream([evt.track]);
-        audioEl.play();
-      }
-
-      function destroyTrack(evt) {
-        console.log(
-          "!!! TRACK STOPPED",
-          evt.kind,
-          evt.participant && evt.participant.session_id
-        );
-        let els = Array.from(document.getElementsByTagName("video")).concat(
-          Array.from(document.getElementsByTagName("audio"))
-        );
-        for (let el of els) {
-          if (el.srcObject && el.srcObject.getTracks()[0] === evt.track) {
-            el.remove();
-          }
-        }
-      }
-
-      function logEvent(evt) {
-        console.log('DAILY EVENT!');
-        console.log(evt);
-        console.log('-----------');
       }
     </script>
   </body>

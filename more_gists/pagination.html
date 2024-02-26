@@ -1,8 +1,8 @@
 <html>
   <head>
     <title>test pagination</title>
+    <script src="../commonGistUtils.js"></script>
     <script src="../_roomInfo.js"></script>
-    <script src="https://unpkg.com/@daily-co/daily-js"></script>
   </head>
   <body onload="main()">
     <div>P A G I N A T E</div>
@@ -16,7 +16,7 @@
     </div>
     <div id="local-cam"></div>
     <hr />
-    <div id="videos" style="display: flex; flex-wrap: wrap;"></div>
+    <div id="videos" style="display: flex; flex-wrap: wrap"></div>
 
     <script>
       const PAGE_SIZE = 5;
@@ -26,15 +26,12 @@
       async function main() {
         window.call = DailyIframe.createCallObject({
           subscribeToTracksAutomatically: false,
-          dailyConfig: {
-            experimentalChromeVideoMuteLightOff: true,
-          },
         });
 
         // set up the track event handlers
         call.on('participant-joined', newParticipant);
         call.on('participant-left', removeParticipant);
-        call.on('track-started', displayTrack);
+        call.on('track-started', _displayTrack);
         call.on('track-stopped', destroyTrack);
 
         // join the session
@@ -114,12 +111,12 @@
         console.log('[PARTICIPANT JOINED]', evt.participant.session_id);
         // subscribe if our current page is not full
         if (evt.participant.tracks.video.state !== 'off') {
-            if (currentlySubscribedIDs.length < PAGE_SIZE) {
-              currentlySubscribedIDs.push(evt.participant.session_id);
-              call.updateParticipant(evt.participant.session_id, {
-                setSubscribedTracks: true,
-              });
-            }
+          if (currentlySubscribedIDs.length < PAGE_SIZE) {
+            currentlySubscribedIDs.push(evt.participant.session_id);
+            call.updateParticipant(evt.participant.session_id, {
+              setSubscribedTracks: true,
+            });
+          }
         }
       }
 
@@ -132,10 +129,14 @@
         }
       }
 
-      function displayTrack(evt) {
-        console.log('[TRACK STARTED]', evt.participant.session_id, evt.track.kind);
+      function _displayTrack(evt) {
+        console.log(
+          '[TRACK STARTED]',
+          evt.participant.session_id,
+          evt.track.kind
+        );
         if (evt.track.kind === 'video') {
-          displayVideo(evt);
+          _displayVideo(evt);
         } else {
           playAudio(evt);
         }
@@ -143,7 +144,7 @@
 
       const SMALL_VIDEO_WIDTH = 440;
 
-      function displayVideo(evt) {
+      function _displayVideo(evt) {
         let videoEl = document.createElement('video');
         videoEl._participant = evt.participant;
         videoEl.style.width = SMALL_VIDEO_WIDTH;
@@ -166,33 +167,6 @@
 
         videoEl.srcObject = new MediaStream([evt.track]);
         videoEl.play();
-      }
-
-      function playAudio(evt) {
-        if (evt.participant.local) {
-          return;
-        }
-        let audioEl = document.createElement('audio');
-        document.body.appendChild(audioEl);
-        audioEl.srcObject = new MediaStream([evt.track]);
-        audioEl.play();
-      }
-
-      function destroyTrack(evt) {
-        console.log(
-          '[TRACK STOPPED]',
-          (evt.participant && evt.participant.session_id) || '[left meeting]',
-          evt.track.kind
-        );
-
-        let els = Array.from(document.getElementsByTagName('video')).concat(
-          Array.from(document.getElementsByTagName('audio'))
-        );
-        for (let el of els) {
-          if (el.srcObject && el.srcObject.getTracks()[0] === evt.track) {
-            el.remove();
-          }
-        }
       }
 
       // ----

@@ -2,17 +2,18 @@
   <head>
     <title>media ingest</title>
     <script src="../_roomInfo.js"></script>
-    <script src="../daily-iframe.js"></script>
   </head>
-  
+
   <body onload="main()">
     <div id="local-controls">
       <button id="join" onclick="joinAsOwner()">join room</button>
       <button id="leave" onclick="leaveRoom()">leave room</button>
       <hr />
-      <input id="url"
-          value="file:///Users/mattieruth/Desktop/bunny.mp4"
-          size="64" />
+      <input
+        id="url"
+        value="file:///Users/mattieruth/Desktop/bunny.mp4"
+        size="64"
+      />
       <hr />
       <button onclick="startIngest()">start ingest</button>
       <button onclick="stopIngest()">stop ingest</button>
@@ -20,11 +21,11 @@
       <button onclick="playIngest()">play ingest</button>
       <hr />
     </div>
-    
+
     <div>
       <video controls autoplay></video>
     </div>
-    
+
     <script>
       async function main() {
         window.call = DailyIframe.createCallObject({
@@ -39,79 +40,112 @@
         call.on('track-stopped', (ev) => removeTrack(ev));
         call.on('error', (e) => console.error(e));
 
-        call.on('remote-media-player-started', (ev) => console.log('[event - remote media player started]' + JSON.stringify(ev))) ;
-        call.on('remote-media-player-stopped', (ev) => console.log('[event - remote media player stopped]' + JSON.stringify(ev)));
-        call.on('remote-media-player-updated', (ev) => console.log(' [event - remote media player state change]' + JSON.stringify(ev)));
-        call.on('nonfatal-error', (ev) => console.log(' [event - remote media player error]' + JSON.stringify(ev)));
-        
+        call.on('remote-media-player-started', (ev) =>
+          console.log(
+            '[event - remote media player started]' + JSON.stringify(ev)
+          )
+        );
+        call.on('remote-media-player-stopped', (ev) =>
+          console.log(
+            '[event - remote media player stopped]' + JSON.stringify(ev)
+          )
+        );
+        call.on('remote-media-player-updated', (ev) =>
+          console.log(
+            ' [event - remote media player state change]' + JSON.stringify(ev)
+          )
+        );
+        call.on('nonfatal-error', (ev) =>
+          console.log(
+            ' [event - remote media player error]' + JSON.stringify(ev)
+          )
+        );
+
         // call.on('participant-joined', (ev) => addSubscription(ev) );
-        call.on('participant-joined', (ev) => console.log('[participan joined]' + JSON.stringify(ev)));
-        call.on('participant-updated', (ev) => console.log('[participan updated]' + JSON.stringify(ev)));
-        call.on('participant-left', (ev) => console.log('[participan left]' + JSON.stringify(ev)));
-    }
-    
-    async function addSubscription(ev) {
-        console.log('[participan joined]' + JSON.stringify(ev));
-        let participantID = ev['participant']['session_id']
-        await call.updateParticipant(participantID, {setSubscribedTracks: { 
-        rmpAudio: true,
-        rmpVideo: true }});
+        call.on('participant-joined', (ev) =>
+          console.log('[participan joined]' + JSON.stringify(ev))
+        );
+        call.on('participant-updated', (ev) =>
+          console.log('[participan updated]' + JSON.stringify(ev))
+        );
+        call.on('participant-left', (ev) =>
+          console.log('[participan left]' + JSON.stringify(ev))
+        );
       }
-      
+
+      async function addSubscription(ev) {
+        console.log('[participan joined]' + JSON.stringify(ev));
+        let participantID = ev['participant']['session_id'];
+        await call.updateParticipant(participantID, {
+          setSubscribedTracks: {
+            rmpAudio: true,
+            rmpVideo: true,
+          },
+        });
+      }
+
       async function joinAsOwner() {
-        await call.join({ url: window.ROOM_URL, token: window.JOIN_TOKEN, subscribeToTracksAutomatically: true });
+        await call.join({
+          url: window.ROOM_URL,
+          token: window.JOIN_TOKEN,
+          subscribeToTracksAutomatically: true,
+        });
         // await call.join({ url: window.ROOM_URL, token: t});
         console.log('me -->', call.participants().local);
       }
-      
+
       async function leaveRoom() {
         await call.leave();
       }
-      
+
       async function startIngest() {
-        const url = document.querySelector("#url").value;
+        const url = document.querySelector('#url').value;
         try {
           let res = await call.startRemoteMediaPlayer(url);
           console.warn('RET FROM startRemoteMediaPlayer', res);
           window.ingestId = res.session_id;
-        } catch(ex) {
-            console.log("exception in startMediaPlayer:" + ex)
+        } catch (ex) {
+          console.log('exception in startMediaPlayer:' + ex);
         }
       }
-      
+
       async function stopIngest() {
         try {
-        let res = await call.stopRemoteMediaPlayer(window.ingestId);
-        console.warn('RET FROM stopRemoteMediaPlayer', res);
-        } catch(ex) {
-            console.log("exception in stop:" + ex)
+          let res = await call.stopRemoteMediaPlayer(window.ingestId);
+          console.warn('RET FROM stopRemoteMediaPlayer', res);
+        } catch (ex) {
+          console.log('exception in stop:' + ex);
         }
       }
-      
+
       async function pauseIngest() {
         try {
-          let res = await call.updateRemoteMediaPlayer(window.ingestId, {state: 'pause'});
+          let res = await call.updateRemoteMediaPlayer(window.ingestId, {
+            state: 'pause',
+          });
           console.warn('RET FROM pauseRemoteMediaPlayer', res);
-          } catch(ex) {
-                console.log("exception in pause:" + ex)
-            }
-      }
-      
-      async function playIngest() {
-        try {
-          let res = await call.updateRemoteMediaPlayer(window.ingestId, {state: 'play'});
-          console.warn('RET FROM playRemoteMediaPlayer', res);
-        } catch(ex) {
-          console.log("exception in play:" + ex)
+        } catch (ex) {
+          console.log('exception in pause:' + ex);
         }
       }
-      
+
+      async function playIngest() {
+        try {
+          let res = await call.updateRemoteMediaPlayer(window.ingestId, {
+            state: 'play',
+          });
+          console.warn('RET FROM playRemoteMediaPlayer', res);
+        } catch (ex) {
+          console.log('exception in play:' + ex);
+        }
+      }
+
       function addTrack(ev) {
-        console.log("[track Added] : ")
-        videoEl = document.querySelector("video");
-        
-        if (ev.track.readyState !== "live") return;
-        
+        console.log('[track Added] : ');
+        videoEl = document.querySelector('video');
+
+        if (ev.track.readyState !== 'live') return;
+
         if (videoEl.srcObject) {
           videoEl.srcObject.addTrack(ev.track);
         } else {
@@ -120,20 +154,19 @@
         // videoEl.srcObject = new MediaStream([ev.track]);
         videoEl.load();
       }
-      
+
       function removeTrack(ev) {
-        console.log("[track stopped] : " )
-        videoEl = document.querySelector("video");
-        
+        console.log('[track stopped] : ');
+        videoEl = document.querySelector('video');
+
         if (videoEl.srcObject) {
           videoEl.srcObject.removeTrack(ev.track);
           // videoEl.srcObject = null
           // videoEl.load()
-        } 
+        }
       }
-      
+
       // ----
-      
     </script>
   </body>
 </html>

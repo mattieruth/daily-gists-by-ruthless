@@ -2,7 +2,6 @@
   <head>
     <title>media ingest</title>
     <script src="../_roomInfo.js"></script>
-    <script src="../daily-iframe.js"></script>
   </head>
 
   <body onload="main()">
@@ -10,9 +9,11 @@
       <button id="join" onclick="joinAsOwner()">join room</button>
       <button id="leave" onclick="leaveRoom()">leave room</button>
       <hr />
-      <input id="url"
-          value="file:///Users/mattieruth/Desktop/bunny.mp4"
-          size="64" />
+      <input
+        id="url"
+        value="file:///Users/mattieruth/Desktop/bunny.mp4"
+        size="64"
+      />
       <hr />
       <button onclick="startIngest()">start ingest</button>
       <button onclick="stopIngest()">stop ingest</button>
@@ -28,7 +29,6 @@
     <script>
       async function main() {
         window.call = DailyIframe.createCallObject({
-
           // WHILE ALONE IN A ROOM, IF audioSource and videoSource ARE false
           // trying to start the live stream will fail
 
@@ -41,40 +41,68 @@
         // call.on('track-stopped', (ev) => removeTrack(ev));
         call.on('error', (e) => console.error(e));
 
-        call.on('remote-media-player-started', (ev) => console.log('[event - remote media player started]' + JSON.stringify(ev))) ;
-        call.on('remote-media-player-stopped', (ev) => console.log('[event - remote media player stopped]' + JSON.stringify(ev)));
-        call.on('remote-media-player-updated', (ev) => console.log('[event - remote media player updated]' + JSON.stringify(ev)));
-        call.on('nonfatal-error', (ev) => console.log(' [event - remote media player error]' + JSON.stringify(ev)));
+        call.on('remote-media-player-started', (ev) =>
+          console.log(
+            '[event - remote media player started]' + JSON.stringify(ev)
+          )
+        );
+        call.on('remote-media-player-stopped', (ev) =>
+          console.log(
+            '[event - remote media player stopped]' + JSON.stringify(ev)
+          )
+        );
+        call.on('remote-media-player-updated', (ev) =>
+          console.log(
+            '[event - remote media player updated]' + JSON.stringify(ev)
+          )
+        );
+        call.on('nonfatal-error', (ev) =>
+          console.log(
+            ' [event - remote media player error]' + JSON.stringify(ev)
+          )
+        );
 
-        call.on('participant-joined', (ev) => addSubscription(ev) );
+        call.on('participant-joined', (ev) => addSubscription(ev));
         // call.on('participant-joined', (ev) => console.log('[participan joined]' + JSON.stringify(ev)));
         call.on('participant-updated', (ev) => handleRMPUpdate(ev));
-        call.on('participant-left', (ev) => console.log('[participan left]' + JSON.stringify(ev)));
+        call.on('participant-left', (ev) =>
+          console.log('[participan left]' + JSON.stringify(ev))
+        );
       }
 
       async function handleRMPUpdate(ev) {
         console.log(' [event - participant-updated]' + JSON.stringify(ev));
-        if(ev.participant.participantType !== 'remote-media-player') {
-          return
+        if (ev.participant.participantType !== 'remote-media-player') {
+          return;
         }
-        if(!(ev.participant.tracks && ev.participant.tracks.rmpVideo.persistentTrack)) {
+        if (
+          !(
+            ev.participant.tracks &&
+            ev.participant.tracks.rmpVideo.persistentTrack
+          )
+        ) {
           // console.log("[ handleRMPUpdate ] no rmp return")
-          return
+          return;
         }
-        if(ev.playerState === 'paused') {
-          videoEl = document.querySelector("video");
+        if (ev.playerState === 'paused') {
+          videoEl = document.querySelector('video');
           if (videoEl.srcObject) {
-            videoEl.srcObject.removeTrack(ev.participant.tracks.rmpVideo.persistentTrack);
-          } 
-        }
-        else {
-          videoEl = document.querySelector("video");
+            videoEl.srcObject.removeTrack(
+              ev.participant.tracks.rmpVideo.persistentTrack
+            );
+          }
+        } else {
+          videoEl = document.querySelector('video');
           // if (ev.track.readyState !== "live") return;
 
           if (videoEl.srcObject) {
-            videoEl.srcObject.addTrack(ev.participant.tracks.rmpVideo.persistentTrack);
+            videoEl.srcObject.addTrack(
+              ev.participant.tracks.rmpVideo.persistentTrack
+            );
           } else {
-            videoEl.srcObject = new MediaStream([ev.participant.tracks.rmpVideo.persistentTrack]);
+            videoEl.srcObject = new MediaStream([
+              ev.participant.tracks.rmpVideo.persistentTrack,
+            ]);
           }
           videoEl.load();
         }
@@ -83,16 +111,23 @@
       async function addSubscription(ev) {
         console.log('[participan joined]' + JSON.stringify(ev));
         let cnts = call.participantCounts();
-          console.log('COUNTS:', cnts);
+        console.log('COUNTS:', cnts);
 
-        let participantID = ev['participant']['session_id']
-        await call.updateParticipant(participantID, {setSubscribedTracks: { 
-        rmpAudio: true,
-        rmpVideo: true }});
+        let participantID = ev['participant']['session_id'];
+        await call.updateParticipant(participantID, {
+          setSubscribedTracks: {
+            rmpAudio: true,
+            rmpVideo: true,
+          },
+        });
       }
 
       async function joinAsOwner() {
-        await call.join({ url: window.ROOM_URL, token: window.JOIN_TOKEN, subscribeToTracksAutomatically: false });
+        await call.join({
+          url: window.ROOM_URL,
+          token: window.JOIN_TOKEN,
+          subscribeToTracksAutomatically: false,
+        });
         // await call.join({ url: window.ROOM_URL, token: t});
         console.log('me -->', call.participants().local);
       }
@@ -103,51 +138,55 @@
 
       async function startIngest() {
         // const url = document.querySelector("#url").value;
-        const url = 'http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4';
+        const url =
+          'http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4';
         try {
-          let res = await call.startRemoteMediaPlayer({url});
+          let res = await call.startRemoteMediaPlayer({ url });
           console.warn('RET FROM startRemoteMediaPlayer', res);
           let cnts = call.participantCounts();
           console.log('COUNTS:', cnts);
           window.ingestId = res.session_id;
-        } catch(ex) {
-            console.log("exception in startMediaPlayer:" + ex)
+        } catch (ex) {
+          console.log('exception in startMediaPlayer:' + ex);
         }
       }
 
       async function stopIngest() {
         try {
-        let res = await call.stopRemoteMediaPlayer(window.ingestId);
-        console.warn('RET FROM stopRemoteMediaPlayer', res);
-        } catch(ex) {
-            console.log("exception in stop:" + ex)
+          let res = await call.stopRemoteMediaPlayer(window.ingestId);
+          console.warn('RET FROM stopRemoteMediaPlayer', res);
+        } catch (ex) {
+          console.log('exception in stop:' + ex);
         }
       }
 
       async function pauseIngest() {
-
         try {
-          let res = await call.updateRemoteMediaPlayer(window.ingestId, {state: 'pause'});
+          let res = await call.updateRemoteMediaPlayer(window.ingestId, {
+            state: 'pause',
+          });
           console.warn('RET FROM pauseRemoteMediaPlayer', res);
-          } catch(ex) {
-                console.log("exception in pause:" + ex)
-            }
+        } catch (ex) {
+          console.log('exception in pause:' + ex);
+        }
       }
 
       async function playIngest() {
         try {
-        let res = await call.updateRemoteMediaPlayer(window.ingestId, {state: 'play'});
-        console.warn('RET FROM playRemoteMediaPlayer', res);
-        } catch(ex) {
-            console.log("exception in play:" + ex)
+          let res = await call.updateRemoteMediaPlayer(window.ingestId, {
+            state: 'play',
+          });
+          console.warn('RET FROM playRemoteMediaPlayer', res);
+        } catch (ex) {
+          console.log('exception in play:' + ex);
         }
       }
 
       function addTrack(ev) {
-        console.log("[track Added] : ")
-        videoEl = document.querySelector("video");
+        console.log('[track Added] : ');
+        videoEl = document.querySelector('video');
 
-        if (ev.track.readyState !== "live") return;
+        if (ev.track.readyState !== 'live') return;
 
         if (videoEl.srcObject) {
           videoEl.srcObject.addTrack(ev.track);
@@ -159,14 +198,14 @@
       }
 
       function removeTrack(ev) {
-        console.log("[track stopped] : ")
-        videoEl = document.querySelector("video");
+        console.log('[track stopped] : ');
+        videoEl = document.querySelector('video');
 
         if (videoEl.srcObject) {
           videoEl.srcObject.removeTrack(ev.track);
           // videoEl.srcObject = null
           // videoEl.load()
-        } 
+        }
       }
 
       // ----

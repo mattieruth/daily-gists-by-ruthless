@@ -1,15 +1,14 @@
 <html>
   <head>
     <title>stream local video file</title>
+    <script src="../commonGistUtils.js"></script>
     <script src="../_roomInfo.js"></script>
-    <!-- <script src="./daily-iframe.js"></script> -->
-     <!-- <script src="https://unpkg.com/@daily-co/daily-js@0.9.993"></script> -->
-    <script src="https://unpkg.com/@daily-co/daily-js"></script>
   </head>
   <body onload="main()">
     <div id="local-controls" style="width: 50%; float: left">
-      <label for="microphone">Microphone:</label><select name="microphone" id="mic-picker"></select>
-      <button onclick="join()">join</button>
+      <label for="microphone">Microphone:</label
+      ><select name="microphone" id="mic-picker"></select>
+      <button onclick="_join()">join</button>
       <hr />
     </div>
     <div id="videos" style="margin-left: 50%"></div>
@@ -19,28 +18,24 @@
         let micPicker = document.getElementById('mic-picker');
         let devices = await navigator.mediaDevices.enumerateDevices();
         devices.forEach((d) => {
-            if (d.kind === 'audioinput') {
-                let el = document.createElement('option');
-                el.textContent = d.label;
-                el.value = d.label;
-                micPicker.appendChild(el);
-            }
-        })
+          if (d.kind === 'audioinput') {
+            let el = document.createElement('option');
+            el.textContent = d.label;
+            el.value = d.label;
+            micPicker.appendChild(el);
+          }
+        });
       }
 
-      async function join() {
-        let iframe = document.createElement("call-iframe-container");
-        document.body.appendChild(iframe);
-        window.call = DailyIframe.createFrame(iframe, {
-            dailyConfig: {
-                experimentalChromeVideoMuteLightOff: true,
-            },
-            showLeaveButton: true,
-            userName: 'iFrame',
+      async function _join() {
+        callObjectMode = false;
+        createDailyInstance({
+          showLeaveButton: true,
+          userName: 'iFrame',
         });
 
-        await call.load({url: ROOM_URL});
-        console.log("loaded");
+        await call.load({ url: ROOM_URL });
+        console.log('loaded');
         const micPicker = document.getElementById('mic-picker');
         const selectedDeviceLabel = micPicker.value;
         console.log('mic', selectedDeviceLabel);
@@ -48,19 +43,14 @@
         console.log('got devices', frameDevices);
         let selectedDeviceID;
         frameDevices.devices.forEach((d) => {
-            if (d.kind === 'audioinput' && d.label === selectedDeviceLabel) {
-                selectedDeviceID = d.deviceId;
-                console.log('should use device: ', selectedDeviceID);
-            }
-        })
+          if (d.kind === 'audioinput' && d.label === selectedDeviceLabel) {
+            selectedDeviceID = d.deviceId;
+            console.log('should use device: ', selectedDeviceID);
+          }
+        });
 
-        try {
-          console.log('JOIN ', window.ROOM_URL);
-          call.join({audioSource: selectedDeviceID});
-        } catch(e) {
-          console.error ('join failed!', e);
-        }
+        await join({ audioSource: selectedDeviceID });
       }
     </script>
   </body>
-</html>/
+</html>
