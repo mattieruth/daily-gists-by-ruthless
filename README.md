@@ -34,3 +34,7 @@ $ ./run_server <port>
 
 Just change which room `window.ROOM_URL` points to or `window.JOIN_TOKEN` points
 to in your `_roomInfo.js` file.
+
+## Changing your daily-js version
+
+In [`commonGistUtil`](./commonGistUtils.js#L18-L21), update the `importDaily()` lines to specify either `'local'` (to look for a local copy of daily.js), `'latest'` (to pull from unkpg.com the most recently published release), or `0.x.y` (to pull a specific released version).
