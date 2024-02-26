@@ -38,3 +38,11 @@ to in your `_roomInfo.js` file.
 ## Changing your daily-js version
 
 In [`commonGistUtil`](./commonGistUtils.js#L18-L21), update the `importDaily()` lines to specify either `'local'` (to look for a local copy of daily.js), `'latest'` (to pull from unkpg.com the most recently published release), or `0.x.y` (to pull a specific released version).
+
+## Running in an embedded iFrame
+
+Most of the gists in this repo support running in either call object mode or using prebuilt in an embedded iFrame. To run embedded, simply add `?prebuilt=1` to the end of your file url.
+
+```
+http://localhost:3050/basic-call-object.html?prebuilt=1
+```
