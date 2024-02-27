@@ -1,6 +1,7 @@
 <html>
   <head>
     <title>media ingest</title>
+    <script src="../commonGistUtils.js"></script>
     <script src="../_roomInfo.js"></script>
   </head>
 
@@ -11,7 +12,7 @@
       <hr />
       <input
         id="url"
-        value="file:///Users/mattieruth/Desktop/bunny.mp4"
+        value="http://localhost:3050/more_gists/big_buck_bunny.mp4"
         size="64"
       />
       <hr />
@@ -31,20 +32,23 @@
         window.call = DailyIframe.createCallObject({
           // WHILE ALONE IN A ROOM, IF audioSource and videoSource ARE false
           // trying to start the live stream will fail
+
           audioSource: false,
           videoSource: false,
+          userName: 'rmp user',
         });
 
         call.on('joined-meeting', () => console.log('[JOINED MEETING]'));
-        call.on('track-started', (ev) => addTrack(ev));
-        call.on('track-stopped', (ev) => removeTrack(ev));
+        // call.on('track-started', (ev) => addTrack(ev));
+        // call.on('track-stopped', (ev) => removeTrack(ev));
         call.on('error', (e) => console.error(e));
 
-        call.on('remote-media-player-started', (ev) =>
+        call.on('remote-media-player-started', (ev) => {
+          window.ingestId = ev.session_id;
           console.log(
             '[event - remote media player started]' + JSON.stringify(ev)
-          )
-        );
+          );
+        });
         call.on('remote-media-player-stopped', (ev) =>
           console.log(
             '[event - remote media player stopped]' + JSON.stringify(ev)
@@ -52,7 +56,7 @@
         );
         call.on('remote-media-player-updated', (ev) =>
           console.log(
-            ' [event - remote media player state change]' + JSON.stringify(ev)
+            '[event - remote media player updated]' + JSON.stringify(ev)
           )
         );
         call.on('nonfatal-error', (ev) =>
@@ -61,20 +65,57 @@
           )
         );
 
-        // call.on('participant-joined', (ev) => addSubscription(ev) );
-        call.on('participant-joined', (ev) =>
-          console.log('[participan joined]' + JSON.stringify(ev))
-        );
-        call.on('participant-updated', (ev) =>
-          console.log('[participan updated]' + JSON.stringify(ev))
-        );
+        call.on('participant-joined', (ev) => addSubscription(ev));
+        // call.on('participant-joined', (ev) => console.log('[participan joined]' + JSON.stringify(ev)));
+        call.on('participant-updated', (ev) => handleRMPUpdate(ev));
         call.on('participant-left', (ev) =>
           console.log('[participan left]' + JSON.stringify(ev))
         );
       }
 
+      async function handleRMPUpdate(ev) {
+        console.log(' [event - participant-updated]' + JSON.stringify(ev));
+        if (ev.participant.participantType !== 'remote-media-player') {
+          return;
+        }
+        if (
+          !(
+            ev.participant.tracks &&
+            ev.participant.tracks.rmpVideo.persistentTrack
+          )
+        ) {
+          // console.log("[ handleRMPUpdate ] no rmp return")
+          return;
+        }
+        if (ev.playerState === 'paused') {
+          videoEl = document.querySelector('video');
+          if (videoEl.srcObject) {
+            videoEl.srcObject.removeTrack(
+              ev.participant.tracks.rmpVideo.persistentTrack
+            );
+          }
+        } else {
+          videoEl = document.querySelector('video');
+          // if (ev.track.readyState !== "live") return;
+
+          if (videoEl.srcObject) {
+            videoEl.srcObject.addTrack(
+              ev.participant.tracks.rmpVideo.persistentTrack
+            );
+          } else {
+            videoEl.srcObject = new MediaStream([
+              ev.participant.tracks.rmpVideo.persistentTrack,
+            ]);
+          }
+          videoEl.load();
+        }
+      }
+
       async function addSubscription(ev) {
         console.log('[participan joined]' + JSON.stringify(ev));
+        let cnts = call.participantCounts();
+        console.log('COUNTS:', cnts);
+
         let participantID = ev['participant']['session_id'];
         await call.updateParticipant(participantID, {
           setSubscribedTracks: {
@@ -88,7 +129,7 @@
         await call.join({
           url: window.ROOM_URL,
           token: window.JOIN_TOKEN,
-          subscribeToTracksAutomatically: true,
+          subscribeToTracksAutomatically: false,
         });
         // await call.join({ url: window.ROOM_URL, token: t});
         console.log('me -->', call.participants().local);
@@ -99,10 +140,14 @@
       }
 
       async function startIngest() {
-        const url = document.querySelector('#url').value;
+        // const url = document.querySelector("#url").value;
+        const url =
+          'http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4';
         try {
-          let res = await call.startRemoteMediaPlayer(url);
+          let res = await call.startRemoteMediaPlayer({ url });
           console.warn('RET FROM startRemoteMediaPlayer', res);
+          let cnts = call.participantCounts();
+          console.log('COUNTS:', cnts);
           window.ingestId = res.session_id;
         } catch (ex) {
           console.log('exception in startMediaPlayer:' + ex);
@@ -120,8 +165,9 @@
 
       async function pauseIngest() {
         try {
-          let res = await call.updateRemoteMediaPlayer(window.ingestId, {
-            state: 'pause',
+          let res = await call.updateRemoteMediaPlayer({
+            session_id: window.ingestId,
+            settings: { state: 'pause' },
           });
           console.warn('RET FROM pauseRemoteMediaPlayer', res);
         } catch (ex) {
@@ -131,8 +177,9 @@
 
       async function playIngest() {
         try {
-          let res = await call.updateRemoteMediaPlayer(window.ingestId, {
-            state: 'play',
+          let res = await call.updateRemoteMediaPlayer({
+            session_id: window.ingestId,
+            settings: { state: 'play' },
           });
           console.warn('RET FROM playRemoteMediaPlayer', res);
         } catch (ex) {
@@ -167,6 +214,15 @@
       }
 
       // ----
+
+      async function createMeetingToken(properties) {
+        let response = await fetch(API_ENDPOINT + '/meeting-tokens', {
+          method: 'post',
+          headers: { Authorization: `Bearer ${API_KEY}` },
+          body: JSON.stringify({ properties }),
+        });
+        return (await response.json()).token;
+      }
     </script>
   </body>
 </html>
