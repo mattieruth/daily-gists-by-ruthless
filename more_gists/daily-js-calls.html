@@ -18,6 +18,47 @@
           token: window.JOIN_TOKEN,
           userName: 'mouth',
         });
+        const logEvts = [
+          'loaded',
+          'daily-main-executed',
+          'started-camera',
+          'camera-error',
+          'live-streaming-started',
+          'live-streaming-updated',
+          'live-streaming-stopped',
+          'live-streaming-error',
+          'transcription-started',
+          'transcription-stopped',
+          'transcription-error',
+          'app-message',
+          'transcription-message',
+          'local-screen-share-started',
+          'local-screen-share-stopped',
+          'local-screen-share-canceled',
+          'lang-updated',
+          'network-quality-change',
+          'network-connection',
+          'cpu-load-change',
+          'receive-settings-updated',
+          'input-settings-updated',
+          'send-settings-updated',
+          'local-audio-level',
+          'remote-participants-audio-level',
+          'access-state-updated',
+          'meeting-session-updated',
+          'meeting-session-summary-updated',
+          'meeting-session-state-updated',
+          'dialin-connected',
+          'dialin-error',
+          'dialin-stopped',
+          'dialin-warning',
+          'dialout-connected',
+          'dialout-error',
+          'dialout-stopped',
+          'dialout-warning',
+        ];
+        logEvts.forEach((evt) => call.on(evt, logEvent));
+        call.on('nonfatal-error', (e) => console.warn('NONFATAL ERROR', e));
       }
 
       function sleepDangerously(milliseconds) {
@@ -243,6 +284,58 @@
             },
           },
           {
+            // run this out of the gate because in prebuilt mode
+            // the events are SO noisy
+            desc: 'startRemoteParticipantsAudioLevelObserver',
+            func: call.startRemoteParticipantsAudioLevelObserver,
+            waitAfter: 2,
+            check: {
+              desc: 'remote audio level observer is working',
+              func: () => {
+                return !!Object.keys(call.getRemoteParticipantsAudioLevel())
+                  .length;
+              },
+              expect: true,
+            },
+          },
+          {
+            desc: 'stopRemoteParticipantsAudioLevelObserver',
+            func: call.stopRemoteParticipantsAudioLevelObserver,
+            waitAfter: 2,
+            // apparently this check doesn't work unless you call stop
+            // twice. maybe a bug?
+            // check: {
+            //   desc: 'remote audio level observer is off',
+            //   func: () => {
+            //     return Object.keys(call.getRemoteParticipantsAudioLevel())
+            //       .length;
+            //   },
+            //   expect: 0,
+            // },
+          },
+          {
+            desc: 'startLocalAudioLevelObserver',
+            func: call.startLocalAudioLevelObserver,
+            waitAfter: 2,
+            check: {
+              desc: 'local audio level observer is working',
+              func: () => {
+                return call.getLocalAudioLevel() > 0;
+              },
+              expect: true,
+            },
+          },
+          {
+            desc: 'stopLocalAudioLevelObserver',
+            func: call.stopLocalAudioLevelObserver,
+            waitAfter: 2,
+            check: {
+              desc: 'local audio level observer is off',
+              func: call.getLocalAudioLevel,
+              expect: 0,
+            },
+          },
+          {
             desc: 'enumerateDevices',
             func: () => {
               call.enumerateDevices().then((devices) => {
@@ -344,6 +437,36 @@
             },
           },
           {
+            desc: 'updateInputSettings',
+            func: call.updateInputSettings,
+            args: [
+              {
+                audio: { processor: { type: 'noise-cancellation' } },
+              },
+            ],
+            waitAfter: 5,
+            check: {
+              desc: 'local audio should be processed',
+              func: () => {
+                return callObjectMode
+                  ? call.participants().local.tracks.audio.track.isProcessed
+                  : true;
+              },
+              expect: true,
+            },
+          },
+          {
+            desc: 'setLocalAudio',
+            func: call.setLocalAudio,
+            args: [true],
+            waitAfter: 2,
+            check: {
+              desc: 'local audio should be on',
+              func: call.localAudio,
+              expect: true,
+            },
+          },
+          {
             desc: 'setLocalAudio',
             func: call.setLocalAudio,
             args: [false],
@@ -362,6 +485,31 @@
             check: {
               desc: 'local audio should be on',
               func: call.localAudio,
+              expect: true,
+            },
+          },
+          {
+            desc: 'updateInputSettings',
+            func: call.updateInputSettings,
+            args: [
+              {
+                video: {
+                  processor: {
+                    type: 'background-blur',
+                    config: { strength: 0.8 },
+                  },
+                },
+                audio: { processor: { type: 'noise-cancellation' } },
+              },
+            ],
+            waitAfter: 5,
+            check: {
+              desc: 'local video should be processed',
+              func: () => {
+                return callObjectMode
+                  ? call.participants().local.tracks.video.track.isProcessed
+                  : true;
+              },
               expect: true,
             },
           },
@@ -386,56 +534,6 @@
               func: call.localVideo,
               expect: true,
             },
-          },
-          {
-            desc: 'startLocalAudioLevelObserver',
-            func: call.startLocalAudioLevelObserver,
-            waitAfter: 2,
-            check: {
-              desc: 'local audio level observer is working',
-              func: () => {
-                return call.getLocalAudioLevel() > 0;
-              },
-              expect: true,
-            },
-          },
-          {
-            desc: 'stopLocalAudioLevelObserver',
-            func: call.stopLocalAudioLevelObserver,
-            waitAfter: 2,
-            check: {
-              desc: 'local audio level observer is off',
-              func: call.getLocalAudioLevel,
-              expect: 0,
-            },
-          },
-          {
-            desc: 'startRemoteParticipantsAudioLevelObserver',
-            func: call.startRemoteParticipantsAudioLevelObserver,
-            waitAfter: 2,
-            check: {
-              desc: 'remote audio level observer is working',
-              func: () => {
-                return !!Object.keys(call.getRemoteParticipantsAudioLevel())
-                  .length;
-              },
-              expect: true,
-            },
-          },
-          {
-            desc: 'stopRemoteParticipantsAudioLevelObserver',
-            func: call.stopRemoteParticipantsAudioLevelObserver,
-            waitAfter: 2,
-            // apparently this check doesn't work unless you call stop
-            // twice. maybe a bug?
-            // check: {
-            //   desc: 'remote audio level observer is off',
-            //   func: () => {
-            //     return Object.keys(call.getRemoteParticipantsAudioLevel())
-            //       .length;
-            //   },
-            //   expect: 0,
-            // },
           },
           {
             desc: 'startRecording',
@@ -543,6 +641,20 @@
                 return call.participants().local.userData.favoriteMovie;
               },
               expect: 'goonies',
+            },
+          },
+          {
+            desc: 'setMeetingSessionData',
+            callObjectOnly: true,
+            func: call.setMeetingSessionData,
+            waitAfter: 1,
+            args: [{ there: 'who' }],
+            check: {
+              desc: "who's there",
+              func: () => {
+                return call.meetingSessionState().data.there;
+              },
+              expect: 'who',
             },
           },
           {
