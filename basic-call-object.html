@@ -1,6 +1,6 @@
 <html>
   <head>
-    <title>stream local video file</title>
+    <title>basic call object demo</title>
     <script src="./commonGistUtils.js"></script>
     <script src="./_roomInfo.js"></script>
   </head>
@@ -17,16 +17,21 @@
     <script>
       async function main() {
         let config = {
-          subscribeToTracksAutomatically: true,
+          // subscribeToTracksAutomatically: true,
           // startAudioOff: true,
           // startVideoOff: true,
           // audioSource: true,
           // videoSource: false,
-          dailyConfig: {
-            // alwaysIncludeMicInPermissionPrompt: false,
-            // avoidEval: true,
-            // callObjectBundleUrlOverride: "http://junk.com",
-          },
+          // dailyConfig: {
+          // useLegacyVideoProcessor: true,
+          // v2CamAndMic: false,
+          // enableIndependentDevicePermissionPrompts: true,
+          // alwaysIncludeMicInPermissionPrompt: false,
+          // alwaysIncludeCamInPermissionPrompt: true,
+          // noAutoDefaultDeviceChange: true,
+          // avoidEval: true,
+          // callObjectBundleUrlOverride: "http://junk.com",
+          // },
           // url: ROOM_URL,
           // userData: {
           //   favoriteMovie: "goonies",

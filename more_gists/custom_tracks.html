@@ -1,0 +1,93 @@
+<html>
+  <head>
+    <title>custom tracks demo</title>
+    <script src="../commonGistUtils.js"></script>
+    <script src="../_roomInfo.js"></script>
+  </head>
+  <body onload="main()">
+    <div id="local-controls" style="width: 50%; float: left">
+      <button onclick="join()">join</button>
+      <button onclick="leave()">leave</button><br />
+      <button onclick="startCustomScreenShare()">
+        start custom screen share
+      </button>
+      <button onclick="stopCustomScreenShare()">
+        stop custom screen share
+      </button>
+      <hr />
+    </div>
+    <div id="videos" style="margin-left: 50%"></div>
+
+    <script>
+      let screenTrackState = null;
+      async function main() {
+        let config = {
+          userName: 'jackie joiner',
+        };
+        createDailyInstance(config);
+
+        call.on('participant-updated', (e) => {
+          if (e.participant.local) {
+            checkScreenTrackStateChange(e.participant);
+          }
+        });
+      }
+
+      function startCustomScreenShare() {
+        console.log('STARTING CUSTOM SCREEN SHARE');
+        navigator.mediaDevices
+          .getDisplayMedia({ video: true })
+          .then((stream) => {
+            const vidTrack = stream.getVideoTracks()[0];
+            call.startCustomTrack({
+              track: vidTrack,
+              trackName: 'myCustomScreenShare',
+            });
+            vidTrack.onmute = () => {
+              console.log('!! screen share video: muted');
+            };
+            vidTrack.onunmute = () => {
+              console.log('!! screen share video: unmuted');
+            };
+          })
+          .catch((e) => {
+            console.error('screen share failed', e);
+          });
+      }
+
+      function stopCustomScreenShare() {
+        console.log('STOPPING CUSTOM SCREEN SHARE');
+        if (
+          call.participants().local.tracks['myCustomScreenShare']
+            ?.persistentTrack
+        ) {
+          const screenTrack =
+            call.participants().local.tracks['myCustomScreenShare']
+              .persistentTrack;
+          call.stopCustomTrack('myCustomScreenShare').then(() => {
+            screenTrack.stop();
+            screenTrack.onmute = null;
+            screenTrack.onunmute = null;
+          });
+        }
+      }
+
+      function checkScreenTrackStateChange(localP) {
+        let screenTrack = localP.tracks['myCustomScreenShare'];
+        if (screenTrack) {
+          if (screenTrack.state !== screenTrackState) {
+            console.log(
+              `!! myCustomScreenShare track state updated: ${screenTrack.state}`
+            );
+          }
+          screenTrackState = screenTrack.state;
+        } else {
+          if (screenTrackState) {
+            console.log(`!! myCustomScreenShare track state updated: null`);
+          }
+          screenTrackState = null;
+        }
+      }
+    </script>
+  </body>
+</html>

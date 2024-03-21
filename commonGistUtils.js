@@ -15,9 +15,9 @@ function importDaily(from) {
 }
 
 // Uncomment and update the line to specify where you want to import from.
-// importDaily('0.59.0');
-// importDaily('latest');
-importDaily('local');
+// importDaily('0.58.0');
+importDaily('latest');
+// importDaily('local');
 
 let callObjectMode;
 
@@ -84,17 +84,26 @@ function displayVideo(evt) {
   videosDiv.appendChild(videoEl);
   videoEl.style.width = '100%';
   videoEl.srcObject = new MediaStream([evt.track]);
-  videoEl.play();
+  let p = videoEl.play();
+  p.then(() => {
+    // all good
+  }).catch((e) => {
+    console.error('Error trying to play() video', e);
+  });
 }
 
-function playAudio(evt) {
+async function playAudio(evt) {
   if (evt.participant.local) {
     return;
   }
   let audioEl = document.createElement('audio');
   document.body.appendChild(audioEl);
   audioEl.srcObject = new MediaStream([evt.track]);
-  audioEl.play();
+  try {
+    await audioEl.play();
+  } catch (e) {
+    console.error('Error trying to play() audio', e);
+  }
 }
 
 function destroyTrack(evt) {
@@ -110,6 +119,7 @@ function destroyTrack(evt) {
   for (let el of els) {
     if (el.srcObject && el.srcObject.getTracks()[0] === evt.track) {
       el.remove();
+      el.srcObject = null;
     }
   }
 }

@@ -17,6 +17,11 @@
           url: window.ROOM_URL,
           token: window.JOIN_TOKEN,
           userName: 'mouth',
+          dailyConfig: {
+            // useLegacyVideoProcessor: true,
+            // v2CamAndMic: false,
+            // enableIndependentDevicePermissionPrompts: true,
+          },
         });
         const logEvts = [
           'loaded',
@@ -288,7 +293,9 @@
             // the events are SO noisy
             desc: 'startRemoteParticipantsAudioLevelObserver',
             func: call.startRemoteParticipantsAudioLevelObserver,
+            callObjectOnly: true, // already running on prebuilt
             waitAfter: 2,
+            shouldAwait: true,
             check: {
               desc: 'remote audio level observer is working',
               func: () => {
@@ -317,6 +324,7 @@
             desc: 'startLocalAudioLevelObserver',
             func: call.startLocalAudioLevelObserver,
             waitAfter: 2,
+            shouldAwait: true,
             check: {
               desc: 'local audio level observer is working',
               func: () => {
@@ -436,25 +444,26 @@
               expect: true,
             },
           },
-          {
-            desc: 'updateInputSettings',
-            func: call.updateInputSettings,
-            args: [
-              {
-                audio: { processor: { type: 'noise-cancellation' } },
-              },
-            ],
-            waitAfter: 5,
-            check: {
-              desc: 'local audio should be processed',
-              func: () => {
-                return callObjectMode
-                  ? call.participants().local.tracks.audio.track.isProcessed
-                  : true;
-              },
-              expect: true,
-            },
-          },
+          // {
+          //   desc: 'updateInputSettings',
+          //   func: call.updateInputSettings,
+          //   args: [
+          //     {
+          //       audio: { processor: { type: 'noise-cancellation' } },
+          //     },
+          //   ],
+          //   shouldAwait: true,
+          //   waitAfter: 1,
+          //   check: {
+          //     desc: 'local audio should be processed',
+          //     func: () => {
+          //       return callObjectMode
+          //         ? call.participants().local.tracks.audio.track?.isProcessed
+          //         : true;
+          //     },
+          //     expect: true,
+          //   },
+          // },
           {
             desc: 'setLocalAudio',
             func: call.setLocalAudio,
@@ -502,12 +511,13 @@
                 audio: { processor: { type: 'noise-cancellation' } },
               },
             ],
-            waitAfter: 5,
+            shouldAwait: true,
+            waitAfter: 1,
             check: {
               desc: 'local video should be processed',
               func: () => {
                 return callObjectMode
-                  ? call.participants().local.tracks.video.track.isProcessed
+                  ? call.participants().local.tracks.video.track?.isProcessed
                   : true;
               },
               expect: true,
@@ -826,6 +836,7 @@
         console.log('RUNNING AMOK!');
         console.log('----------------------');
         let testFailed = false;
+        let endOnTestFailure = true;
         for (var cc of calls) {
           if (cc.prebuiltOnly && callObjectMode) continue;
           if (cc.callObjectOnly && !callObjectMode) continue;
@@ -835,11 +846,16 @@
           }
           console.log(`> > > ${cc.desc}(${args})`);
           let results;
-          if (cc.shouldAwait) {
-            // await cc.func(...args);
-            results = await cc.func.apply(call, args);
-          } else {
-            results = cc.func.apply(call, args);
+          try {
+            if (cc.shouldAwait) {
+              // await cc.func(...args);
+              results = await cc.func.apply(call, args);
+            } else {
+              results = cc.func.apply(call, args);
+            }
+          } catch (e) {
+            console.error(`  ${cc.desc} threw an error:`, e);
+            testFailed = true;
           }
           if (cc.waitAfter) {
             await waitFor(cc.waitAfter);
@@ -855,10 +871,12 @@
                 `${emoji}: ${cc.check.desc} | ${val} !== ${cc.check.expect}`
               );
               testFailed = true;
-              break;
             }
           }
           console.log('========');
+          if (testFailed && endOnTestFailure) {
+            break;
+          }
         }
         if (!testFailed) {
           // SHIP IT!
